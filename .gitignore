@@ -1,6 +1,37 @@
-.task
-bin
-frontend/dist
-frontend/node_modules
+# Binaries
+bin/
+changeme
+
+# Wails build artifacts
 build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Task runner
+.task/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
