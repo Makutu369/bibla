@@ -1,7 +1,7 @@
 # Bibla - A Beautiful Bible Reader
 
 <p align="center">
-  <img src="frontend/public/bible.png" alt="Bibla" width="128">
+  <img src="frontend/public/bible.png" alt="Bibla" width="700">
 </p>
 
 A modern Bible reader desktop application built with Wails v3, featuring a dark immersive UI for studying Scripture.
