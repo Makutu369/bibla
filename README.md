@@ -1,59 +1,60 @@
-# Welcome to Your New Wails3 Project!
+# Bibla - A Beautiful Bible Reader
 
-Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
+<p align="center">
+  <img src="frontend/public/bible.png" alt="Bibla" width="128">
+</p>
+
+A modern Bible reader desktop application built with Wails v3, featuring a dark immersive UI for studying Scripture.
+
+## Features
+
+- **Multiple Translations** - Read from various Bible translations including KJV+, NLT, TLB, TPT, AMPC, and DBYe
+- **Full-Text Search** - Search across all verses to find specific passages
+- **Bookmarks** - Save verses with custom notes for quick reference
+- **Highlights** - Color-code important verses with customizable highlight colors
+- **Bible Dictionary** - Look up words and topics with built-in dictionary definitions
+- **Dark UI** - Immersive dark theme designed for comfortable reading sessions
+
+## Tech Stack
+
+- **Backend:** Go with Wails v3
+- **Frontend:** React + TypeScript + Tailwind CSS
+- **Database:** SQLite
+- **Build Tool:** Task
 
 ## Getting Started
 
-1. Navigate to your project directory in the terminal.
+### Prerequisites
 
-2. To run your application in development mode, use the following command:
+- Go 1.25+
+- Node.js and pnpm
+- [Wails v3 CLI](https://wails.io/)
 
-   ```
-   wails3 dev
-   ```
+### Development
 
-   This will start your application and enable hot-reloading for both frontend and backend changes.
+```bash
+# Install dependencies
+cd frontend && pnpm install
+cd ..
 
-3. To build your application for production, use:
+# Run in dev mode
+task dev
+```
 
-   ```
-   wails3 build
-   ```
+### Build
 
-   This will create a production-ready executable in the `build` directory.
+```bash
+task build
+```
 
-## Exploring Wails3 Features
+## Adding Translations
 
-Now that you have your project set up, it's time to explore the features that Wails3 offers:
+Place `.SQLite3` Bible translation files in the `bibles/` directory. The app will automatically detect and list them. Each database should contain:
 
-1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
+- `books` table with book metadata
+- `verses` table with verse text
+- `info` table with translation description
 
-2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
+## Data Storage
 
-   ```
-   go run .
-   ```
-
-   Note: Some examples may be under development during the alpha phase.
-
-3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
-
-4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
-
-## Project Structure
-
-Take a moment to familiarize yourself with your project structure:
-
-- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
-- `main.go`: The entry point of your Go backend
-- `app.go`: Define your application structure and methods here
-- `wails.json`: Configuration file for your Wails project
-
-## Next Steps
-
-1. Modify the frontend in the `frontend/` directory to create your desired UI.
-2. Add backend functionality in `main.go`.
-3. Use `wails3 dev` to see your changes in real-time.
-4. When ready, build your application with `wails3 build`.
-
-Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.
+Bookmarks and highlights are stored in `~/.bibla/bookmarks.db`.
