@@ -4,20 +4,54 @@ import { Sidebar } from './components/Sidebar';
 import { Reader } from './components/Reader';
 import { SearchBar } from './components/SearchBar';
 import { TranslationPicker } from './components/TranslationPicker';
+import { VerseOfDay } from './components/VerseOfDay';
 import { useBible } from './hooks/useBible';
 import { useTheme } from './hooks/useTheme';
 import { useHighlights } from './hooks/useHighlights';
+import { useBookmarks } from './hooks/useBookmarks';
+
+type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan';
 
 function App() {
   const bible = useBible();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activePanel, setActivePanel] = useState<SidebarTab | null>(null);
   const theme = useTheme();
   const hl = useHighlights(bible.currentTranslation);
+  const bm = useBookmarks(bible.currentTranslation);
+  const [parallelMode, setParallelMode] = useState(false);
+  const [parallelTranslation, setParallelTranslation] = useState('');
+  const [dictSearch, setDictSearch] = useState('');
+
+  useEffect(() => {
+    if (bible.translations.length > 1 && !parallelTranslation) {
+      const other = bible.translations.find(t => t.fileName !== bible.currentTranslation);
+      if (other) setParallelTranslation(other.fileName);
+    }
+  }, [bible.translations, bible.currentTranslation, parallelTranslation]);
 
   const nav = useCallback((bn: number, ch: number) => {
     const book = bible.books.find(b => b.bookNumber === bn);
     if (book) { bible.selectBook(book); bible.selectChapter(ch); }
   }, [bible.books, bible.selectBook, bible.selectChapter]);
+
+  const handleToggleBookmark = useCallback(async (bn: number, ch: number, v: number) => {
+    const existing = bm.isBookmarked(bn, ch, v);
+    if (existing) {
+      await bm.removeBookmark(existing.id);
+    } else {
+      await bm.addBookmark(bn, ch, v);
+    }
+  }, [bm]);
+
+  const handleWordLookup = useCallback((topic: string) => {
+    setDictSearch(topic);
+    setActivePanel('dictionary');
+  }, []);
+
+  const handleClearDictSearch = useCallback(() => {
+    setDictSearch('');
+  }, []);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -38,6 +72,13 @@ function App() {
             chapters={bible.chapters}
             onSelectBook={bible.selectBook}
             onSelectChapter={bible.selectChapter}
+            onNavigate={nav}
+            translation={bible.currentTranslation}
+            onClosePanel={() => setActivePanel(null)}
+            activePanel={activePanel}
+            setActivePanel={setActivePanel}
+            dictSearch={dictSearch}
+            onClearDictSearch={handleClearDictSearch}
           />
         </div>
       )}
@@ -60,6 +101,10 @@ function App() {
           </button>
         </header>
 
+        {!bible.currentBook && (
+          <VerseOfDay currentTranslation={bible.currentTranslation} onNavigate={nav} />
+        )}
+
         <div className="flex-1 overflow-hidden">
           <Reader
             verses={bible.verses}
@@ -76,6 +121,13 @@ function App() {
             onNextChapter={bible.goToNextChapter}
             canGoPrev={bible.chapters.indexOf(bible.currentChapter) > 0 || bible.books.findIndex(b => b.bookNumber === bible.currentBook?.bookNumber) > 0}
             canGoNext={bible.chapters.indexOf(bible.currentChapter) < bible.chapters.length - 1 || bible.books.findIndex(b => b.bookNumber === bible.currentBook?.bookNumber) < bible.books.length - 1}
+            isBookmarked={bm.isBookmarked}
+            onToggleBookmark={handleToggleBookmark}
+            parallelMode={parallelMode}
+            onToggleParallel={() => setParallelMode(p => !p)}
+            parallelTranslation={parallelTranslation}
+            onSetParallelTranslation={setParallelTranslation}
+            onWordLookup={handleWordLookup}
           />
         </div>
       </div>
