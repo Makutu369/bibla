@@ -3,7 +3,7 @@ import { Calendar, CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 import { useReadingPlan } from '../hooks/useReadingPlan';
 
 interface ReadingPlanPanelProps {
-  onNavigate: (bookNumber: number, chapter: number) => void;
+  onNavigate: (bookNumber: number, chapter: number, verse?: number) => void;
   onClose: () => void;
 }
 
@@ -19,7 +19,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between px-4 pt-5 pb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-accent" />
+            <Calendar className="w-4 h-4 text-fg-muted" />
             <span className="text-base font-bold text-fg">Reading Plan</span>
           </div>
           <button onClick={onClose}
@@ -34,7 +34,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
             <p className="text-sm text-fg-muted mb-4">No reading plan active</p>
             <button
               onClick={activatePlan}
-              className="px-4 py-2 text-sm font-medium bg-accent text-bg rounded-full hover:opacity-90 transition-opacity">
+              className="px-4 py-2 text-sm font-medium bg-surface-active text-fg rounded-full hover:bg-surface-hover transition-colors">
               Start Bible in a Year
             </button>
           </div>
@@ -47,7 +47,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-accent" />
+          <Calendar className="w-4 h-4 text-fg-muted" />
           <span className="text-base font-bold text-fg">Reading Plan</span>
         </div>
         <button onClick={onClose}
@@ -64,7 +64,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
           </div>
           <div className="w-full h-1.5 bg-surface-active rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent rounded-full transition-all duration-500"
+              className="h-full bg-fg-muted rounded-full transition-all duration-500"
               style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }} />
           </div>
           <div className="text-xs text-fg-muted mt-2">
@@ -108,7 +108,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
                   onClick={() => onNavigate(r.bookNumber, r.chapter)}
                   className={`flex-1 text-left text-sm transition-colors ${done ? 'text-fg-muted line-through' : 'text-fg-secondary hover:text-fg'}`}
                 >
-                  Book {r.bookNumber} · Chapter {r.chapter}
+                  Chapter {r.chapter}
                 </button>
                 <ArrowRight className="w-3 h-3 text-fg-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </motion.div>

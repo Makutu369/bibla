@@ -47,12 +47,21 @@ export interface Highlight {
   createdAt: string;
 }
 
+export interface Note {
+  id: number;
+  bookNumber: number;
+  chapter: number;
+  verse: number;
+  content: string;
+  translation: string;
+  createdAt: string;
+}
+
 export const HIGHLIGHT_COLORS = [
   { name: 'Yellow', value: 'yellow', hex: '#facc15' },
   { name: 'Green', value: 'green', hex: '#22c55e' },
-  { name: 'Blue', value: 'blue', hex: '#3b82f6' },
-  { name: 'Pink', value: 'pink', hex: '#ec4899' },
   { name: 'Orange', value: 'orange', hex: '#f97316' },
+  { name: 'Pink', value: 'pink', hex: '#ec4899' },
 ];
 
 export const OT_BOOKS = Array.from({ length: 46 }, (_, i) => (i + 1) * 10);

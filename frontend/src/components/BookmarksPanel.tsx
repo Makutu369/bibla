@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import { X, Bookmark, StickyNote, Trash2 } from 'lucide-react';
 import { useBookmarks } from '../hooks/useBookmarks';
 import { BibleService } from '../../bindings/changeme';
+import { Input } from './ui/Input';
 
 interface BookmarksPanelProps {
   translation: string;
-  onNavigate: (bookNumber: number, chapter: number) => void;
+  onNavigate: (bookNumber: number, chapter: number, verse?: number) => void;
   onClose: () => void;
 }
 
@@ -42,7 +43,7 @@ export function BookmarksPanel({ translation, onNavigate, onClose }: BookmarksPa
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <div className="flex items-center gap-2">
-          <Bookmark className="w-4 h-4 text-accent" />
+          <Bookmark className="w-4 h-4 text-fg-muted" />
           <span className="text-base font-bold text-fg">Bookmarks</span>
         </div>
         <button onClick={onClose}
@@ -68,23 +69,23 @@ export function BookmarksPanel({ translation, onNavigate, onClose }: BookmarksPa
               className="px-3 py-2.5 rounded-full hover:bg-surface-hover transition-colors group"
             >
               <button
-                onClick={() => onNavigate(b.bookNumber, b.chapter)}
+                onClick={() => onNavigate(b.bookNumber, b.chapter, b.verse)}
                 className="w-full text-left"
               >
                 <span className="text-xs font-medium text-fg-muted">
-                  {bookNames[b.bookNumber] || `Book ${b.bookNumber}`} {b.chapter}:{b.verse}
+                  {bookNames[b.bookNumber] || 'Unknown'} {b.chapter}:{b.verse}
                 </span>
               </button>
 
               {editingId === b.id ? (
                 <div className="mt-1.5 flex gap-1">
-                  <input ref={inputRef} value={noteText}
+                  <Input ref={inputRef} value={noteText}
                     onChange={e => setNoteText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveNote(b.id); if (e.key === 'Escape') setEditingId(null); }}
-                    className="flex-1 h-7 px-2 text-xs bg-transparent border border-border rounded-lg text-fg outline-none focus:border-border-focus"
+                    className="flex-1"
                     placeholder="Add a note…" />
                   <button onClick={() => saveNote(b.id)}
-                    className="px-2 h-7 text-[10px] font-medium bg-accent text-bg rounded-lg">Save</button>
+                    className="px-2 h-7 text-[10px] font-medium bg-surface-active text-fg rounded-lg">Save</button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 mt-1">

@@ -66,7 +66,7 @@ export function useBible() {
     try {
       const result = await BibleService.GetChapters(currentTranslation, currentBook.bookNumber);
       setChapters(result);
-      if (result && result.length > 0) {
+      if (result && result.length > 0 && !result.includes(currentChapter)) {
         setCurrentChapter(result[0]);
       }
     } catch (err) {

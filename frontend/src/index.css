@@ -12,11 +12,11 @@ html, body, #root { height: 100%; width: 100%; overflow: hidden; }
   --surface: #f5f5f4;
   --surface-hover: #e7e5e4;
   --surface-active: #d6d3d1;
-  --border: #e7e5e4;
-  --border-focus: #a8a29e;
+  --border: #c8c3bc;
+  --border-focus: #9c978f;
   --fg: #1c1917;
   --fg-secondary: #57534e;
-  --fg-muted: #a8a29e;
+  --fg-muted: #8a8580;
   --accent: #92724a;
   --accent-hover: #7c5f3b;
   --accent-light: #f5ede4;
@@ -31,6 +31,9 @@ html, body, #root { height: 100%; width: 100%; overflow: hidden; }
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --input: #c8c3bc;
+  --ring: #92724a;
+  --muted-foreground: #8a8580;
 }
 
 /* ─── Gray/Dark Theme ─── */
@@ -58,6 +61,9 @@ html, body, #root { height: 100%; width: 100%; overflow: hidden; }
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+  --input: #2e2e38;
+  --ring: #8a8070;
+  --muted-foreground: #5a5a66;
 }
 
 /* ─── AMOLED Theme ─── */
@@ -66,11 +72,11 @@ html, body, #root { height: 100%; width: 100%; overflow: hidden; }
   --surface: #0a0a0a;
   --surface-hover: rgba(255,255,255,0.06);
   --surface-active: rgba(255,255,255,0.10);
-  --border: rgba(255,255,255,0.10);
-  --border-focus: rgba(255,255,255,0.28);
+  --border: rgba(255,255,255,0.14);
+  --border-focus: rgba(255,255,255,0.32);
   --fg: #ffffff;
-  --fg-secondary: rgba(255,255,255,0.65);
-  --fg-muted: rgba(255,255,255,0.30);
+  --fg-secondary: rgba(255,255,255,0.70);
+  --fg-muted: rgba(255,255,255,0.42);
   --accent: #908478;
   --accent-hover: #a09488;
   --accent-light: rgba(144,132,120,0.10);
@@ -85,6 +91,9 @@ html, body, #root { height: 100%; width: 100%; overflow: hidden; }
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
+  --input: rgba(255,255,255,0.14);
+  --ring: #908478;
+  --muted-foreground: rgba(255,255,255,0.42);
 }
 
 /* ─── Base Styles ─── */
@@ -99,6 +108,35 @@ body {
 }
 
 ::selection { background: var(--selection-bg); color: var(--selection-fg); }
+
+/* Remove browser autofill blue styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--bg) inset !important;
+  -webkit-text-fill-color: var(--fg) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Remove blue outline on all inputs */
+*::-webkit-focus-outer-ring {
+  border: none !important;
+  outline: none !important;
+}
+
+input:focus,
+input:focus-visible,
+input:active,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 5px; }
@@ -227,3 +265,16 @@ header, nav, button, [role="button"], .verse-toolbar { user-select: none; }
 
 /* ─── Transition utilities ─── */
 .transition-smooth { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ─── Input Focus Micro-animations ─── */
+input[type="text"], input[type="search"], textarea, select {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+input[type="text"]:focus, input[type="search"]:focus, textarea:focus, select:focus {
+  transform: scale(1.005);
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+  outline: none !important;
+}
+input[type="text"]:focus:active, input[type="search"]:focus:active {
+  transform: scale(1);
+}

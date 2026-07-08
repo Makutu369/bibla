@@ -11,7 +11,7 @@ const THEME_CLASSES: Record<Theme, string> = {
 };
 
 const THEME_ICONS: Record<Theme, LucideIcon> = { light: Sun, gray: Circle, amoled: Moon };
-const THEME_LABELS: Record<Theme, string> = { light: 'Light', gray: 'Gray', amoled: 'AMOLED' };
+const THEME_LABELS: Record<Theme, string> = { light: 'Light', gray: 'Gray', amoled: 'Dark' };
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {

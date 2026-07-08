@@ -11,7 +11,7 @@ export function TranslationPicker({ translations, currentTranslation, onSelect }
   return (
     <div className="relative flex-shrink-0">
       <select value={currentTranslation} onChange={e => onSelect(e.target.value)}
-        className="appearance-none h-8 pl-3 pr-7 text-[13px] font-medium bg-transparent border border-border rounded-full text-fg-secondary outline-none focus:border-border-focus cursor-pointer transition-colors">
+        className="appearance-none h-9 pl-3 pr-7 text-sm font-medium bg-transparent border border-border rounded-full text-fg-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 cursor-pointer transition-all duration-200">
         {translations.map(t => (
           <option key={t.fileName} value={t.fileName}>{t.displayName}</option>
         ))}

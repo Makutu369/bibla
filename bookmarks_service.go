@@ -45,6 +45,17 @@ func NewBookmarksService(dataDir string) (*BookmarksService, error) {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
+	db.Exec(`
+		CREATE TABLE IF NOT EXISTS notes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			book_number INTEGER NOT NULL,
+			chapter INTEGER NOT NULL,
+			verse INTEGER NOT NULL,
+			content TEXT NOT NULL DEFAULT '',
+			translation TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
 
 	return &BookmarksService{dbPath: dbPath}, nil
 }
@@ -169,4 +180,85 @@ func (s *BookmarksService) GetHighlights() []Highlight {
 		highlights = append(highlights, h)
 	}
 	return highlights
+}
+
+func (s *BookmarksService) AddNote(note Note) (Note, error) {
+	db, err := s.openDB()
+	if err != nil {
+		return Note{}, err
+	}
+	defer db.Close()
+
+	now := time.Now().Format(time.RFC3339)
+	result, err := db.Exec(
+		"INSERT INTO notes (book_number, chapter, verse, content, translation, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		note.BookNumber, note.Chapter, note.Verse, note.Content, note.Translation, now,
+	)
+	if err != nil {
+		return Note{}, err
+	}
+	id, _ := result.LastInsertId()
+	note.ID = int(id)
+	note.CreatedAt = now
+	return note, nil
+}
+
+func (s *BookmarksService) RemoveNote(id int) error {
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec("DELETE FROM notes WHERE id = ?", id)
+	return err
+}
+
+func (s *BookmarksService) UpdateNoteContent(id int, content string) error {
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec("UPDATE notes SET content = ? WHERE id = ?", content, id)
+	return err
+}
+
+func (s *BookmarksService) GetNotes() []Note {
+	db, err := s.openDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, book_number, chapter, verse, content, translation, created_at FROM notes ORDER BY created_at DESC")
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var notes []Note
+	for rows.Next() {
+		var n Note
+		rows.Scan(&n.ID, &n.BookNumber, &n.Chapter, &n.Verse, &n.Content, &n.Translation, &n.CreatedAt)
+		notes = append(notes, n)
+	}
+	return notes
+}
+
+func (s *BookmarksService) GetNoteForVerse(bookNumber, chapter, verse int) *Note {
+	db, err := s.openDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var n Note
+	err = db.QueryRow(
+		"SELECT id, book_number, chapter, verse, content, translation, created_at FROM notes WHERE book_number = ? AND chapter = ? AND verse = ? LIMIT 1",
+		bookNumber, chapter, verse,
+	).Scan(&n.ID, &n.BookNumber, &n.Chapter, &n.Verse, &n.Content, &n.Translation, &n.CreatedAt)
+	if err != nil {
+		return nil
+	}
+	return &n
 }

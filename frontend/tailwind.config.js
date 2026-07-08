@@ -18,6 +18,9 @@ export default {
         'accent-light': 'var(--accent-light)',
         'accent-dim': 'var(--accent-dim)',
         'accent-glow': 'var(--accent-glow)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+        'muted-foreground': 'var(--muted-foreground)',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],

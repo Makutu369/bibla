@@ -87,6 +87,8 @@ func main() {
 
 	bibleService := NewBibleService(biblesDir)
 	dictionaryService := NewDictionaryService(biblesDir)
+	topicalService := NewTopicalService(biblesDir)
+	mapsService := NewMapsService(biblesDir)
 	bookmarksService, err := NewBookmarksService(dataDir)
 	if err != nil {
 		log.Fatal(err)
@@ -96,12 +98,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Preload dictionary, topical, and maps data in background
+	go dictionaryService.Preload()
+	go topicalService.Preload()
+	go mapsService.Preload()
+
 	app := application.New(application.Options{
 		Name:        "Bibla",
 		Description: "A beautiful Bible reader",
 		Services: []application.Service{
 			application.NewService(bibleService),
 			application.NewService(dictionaryService),
+			application.NewService(topicalService),
+			application.NewService(mapsService),
 			application.NewService(bookmarksService),
 			application.NewService(readingPlanService),
 		},

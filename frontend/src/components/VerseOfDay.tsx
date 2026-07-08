@@ -6,7 +6,7 @@ import { cleanVerseText } from '../utils/text';
 
 interface VerseOfDayProps {
   currentTranslation: string;
-  onNavigate: (bookNumber: number, chapter: number) => void;
+  onNavigate: (bookNumber: number, chapter: number, verse?: number) => void;
 }
 
 // Deterministic hash from date string
@@ -109,15 +109,15 @@ export function VerseOfDay({ currentTranslation, onNavigate }: VerseOfDayProps) 
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+            <Sparkles className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
             <div>
               <div className="text-[10px] font-medium text-fg-muted uppercase tracking-wider mb-1">Verse of the Day</div>
               <p className="text-sm text-fg-secondary leading-relaxed font-serif italic">
                 "{verse.text}"
               </p>
               <button
-                onClick={() => onNavigate(verse.bookNumber, verse.chapter)}
-                className="text-xs text-accent hover:underline mt-1.5 inline-block"
+                onClick={() => onNavigate(verse.bookNumber, verse.chapter, verse.verse)}
+                className="text-xs text-fg hover:underline mt-1.5 inline-block"
               >
                 {bookName} {verse.chapter}:{verse.verse}
               </button>

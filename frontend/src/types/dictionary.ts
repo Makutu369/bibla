@@ -5,4 +5,5 @@ export interface DictionaryEntry {
   transliteration: string;
   pronunciation: string;
   definition: string;
+  cognates: DictionaryEntry[];
 }

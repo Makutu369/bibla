@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, ArrowLeftRight, X, Bookmark, BookmarkCheck, Copy, Check, Columns2, BookOpen } from 'lucide-react';
-import { Verse, Highlight, TranslationInfo, Bookmark as BookmarkType } from '../types/bible';
+import { ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, ArrowLeftRight, X, Bookmark, BookmarkCheck, Copy, Check, Columns2, BookOpen, StickyNote } from 'lucide-react';
+import { Verse, Highlight, TranslationInfo, Bookmark as BookmarkType, Note } from '../types/bible';
 import { parseVerseWords, cleanVerseText, getBookTestament } from '../utils/text';
 import { BibleService } from '../../bindings/changeme';
 import { ComparePanel } from './ComparePanel';
@@ -28,12 +28,21 @@ interface ReaderProps {
   parallelTranslation: string;
   onSetParallelTranslation: (t: string) => void;
   onWordLookup: (topic: string) => void;
+  fontSize: number;
+  noteForVerse: (bn: number, ch: number, v: number) => Note | undefined;
+  onToggleNote: (bn: number, ch: number, v: number) => void;
+  focusMode: boolean;
+  onExitFocus: () => void;
+  onNavigateToVerse: (bn: number, ch: number, v?: number) => void;
+  scrollToVerse: { bn: number; ch: number; v: number } | null;
+  onClearScrollToVerse: () => void;
+  readerWidth: number;
 }
 
 const HL_COLORS = [
   { name: 'yellow', bg: 'bg-yellow-400/30', ring: 'ring-yellow-400/40', dot: '#facc15' },
   { name: 'green', bg: 'bg-emerald-400/30', ring: 'ring-emerald-400/40', dot: '#22c55e' },
-  { name: 'blue', bg: 'bg-blue-400/30', ring: 'ring-blue-400/40', dot: '#3b82f6' },
+  { name: 'orange', bg: 'bg-orange-400/30', ring: 'ring-orange-400/40', dot: '#f97316' },
   { name: 'pink', bg: 'bg-pink-400/30', ring: 'ring-pink-400/40', dot: '#ec4899' },
   { name: 'purple', bg: 'bg-violet-400/30', ring: 'ring-violet-400/40', dot: '#a855f7' },
 ] as const;
@@ -64,17 +73,34 @@ function VerseContent({ verse, currentBook, getHighlightFn }: {
   );
 }
 
-export function Reader({ verses, currentBook, currentChapter, loading, highlights, translations, currentTranslation, onSelectTranslation, onToggleHighlight, getHighlight, onPrevChapter, onNextChapter, canGoPrev, canGoNext, isBookmarked, onToggleBookmark, parallelMode, onToggleParallel, parallelTranslation, onSetParallelTranslation, onWordLookup }: ReaderProps) {
+export function Reader({ verses, currentBook, currentChapter, loading, highlights, translations, currentTranslation, onSelectTranslation, onToggleHighlight, getHighlight, onPrevChapter, onNextChapter, canGoPrev, canGoNext, isBookmarked, onToggleBookmark, parallelMode, onToggleParallel, parallelTranslation, onSetParallelTranslation, onWordLookup, fontSize, readerWidth, noteForVerse, onToggleNote, focusMode, onExitFocus, onNavigateToVerse, scrollToVerse, onClearScrollToVerse }: ReaderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [activeVerse, setActiveVerse] = useState<string | null>(null);
   const [compareVerse, setCompareVerse] = useState<{ bn: number; ch: number; v: number } | null>(null);
   const [copiedVerse, setCopiedVerse] = useState<string | null>(null);
   const [parallelVerses, setParallelVerses] = useState<Verse[]>([]);
+  const [flashVerse, setFlashVerse] = useState<string | null>(null);
 
   useEffect(() => {
     ref.current?.scrollTo({ top: 0, behavior: 'instant' });
     setActiveVerse(null);
   }, [currentBook, currentChapter]);
+
+  useEffect(() => {
+    if (scrollToVerse) {
+      const key = `${scrollToVerse.bn}-${scrollToVerse.ch}-${scrollToVerse.v}`;
+      setFlashVerse(key);
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`verse-${key}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      const t = setTimeout(() => setFlashVerse(null), 1500);
+      onClearScrollToVerse();
+      return () => clearTimeout(t);
+    }
+  }, [scrollToVerse, onClearScrollToVerse]);
 
   useEffect(() => {
     if (!parallelMode || !currentBook || parallelTranslation === currentTranslation) {
@@ -128,6 +154,12 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
           </div>
           <div className="text-fg-secondary text-lg font-medium">No text selected</div>
           <div>Choose a book from the sidebar to start reading</div>
+          {focusMode && (
+            <button onClick={onExitFocus}
+              className="mt-4 px-3 py-1.5 text-xs bg-surface border border-border rounded-lg hover:bg-surface-hover transition-colors">
+              Exit reading mode
+            </button>
+          )}
         </div>
       </div>
     );
@@ -151,6 +183,16 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
 
   return (
     <div className="flex flex-col h-full">
+      {/* Focus mode exit hint */}
+      {focusMode && (
+        <div className="absolute top-2 right-2 z-50">
+          <button onClick={onExitFocus}
+            className="px-2 py-1 text-[10px] text-fg-muted bg-surface/80 backdrop-blur-sm border border-border rounded-lg hover:text-fg hover:bg-surface-hover transition-colors">
+            Exit reading mode
+          </button>
+        </div>
+      )}
+
       {/* Chapter header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border flex-shrink-0 bg-bg/80 backdrop-blur-sm">
         <div>
@@ -164,16 +206,16 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
             className={`w-9 h-9 flex items-center justify-center rounded-full border transition-all duration-200 ${
               parallelMode
                 ? 'border-accent bg-accent text-white shadow-sm'
-                : 'border-border text-fg-muted hover:text-fg hover:bg-surface-hover hover:border-border-focus'
+                : 'border-border text-fg-secondary hover:text-fg hover:bg-surface-hover hover:border-border-focus'
             }`}
-            title="Parallel reading">
+            title="Compare translations side by side">
             <Columns2 className="w-4 h-4" />
           </motion.button>
           {parallelMode && (
             <select
               value={parallelTranslation}
               onChange={e => onSetParallelTranslation(e.target.value)}
-              className="appearance-none h-9 px-3 pr-7 text-[12px] font-medium bg-surface border border-border rounded-full text-fg-secondary outline-none focus:border-accent cursor-pointer transition-all">
+              className="appearance-none h-9 px-3 pr-7 text-sm font-medium bg-transparent border border-border rounded-full text-fg-secondary outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 cursor-pointer transition-all duration-200">
               {otherTranslations.map(t => (
                 <option key={t.fileName} value={t.fileName}>{t.displayName}</option>
               ))}
@@ -204,20 +246,23 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
         }}>
         <div className="flex gap-0 h-full">
           {/* Main column */}
-          <div className={`mx-auto px-6 py-12 ${parallelMode ? 'flex-1 border-r border-border' : 'w-full max-w-reader'}`}>
-            <div className="reader-text">
+          <div className={`mx-auto px-6 py-12 ${parallelMode ? 'flex-1 border-r border-border' : 'w-full'}`} style={parallelMode ? undefined : { maxWidth: readerWidth }}>
+            <div className="reader-text" style={{ fontSize: `${fontSize}px` }}>
               {paragraphs.map((para, pIdx) => (
                 <p key={pIdx} className={`mb-6 ${pIdx === 0 ? 'drop-cap' : ''}`}>
                   {para.map(verse => {
                     const key = `${verse.bookNumber}-${verse.chapter}-${verse.verse}`;
                     const hl = getHighlight(verse.bookNumber, verse.chapter, verse.verse);
                     const bm = isBookmarked(verse.bookNumber, verse.chapter, verse.verse);
+                    const note = noteForVerse(verse.bookNumber, verse.chapter, verse.verse);
                     const isActive = activeVerse === key;
                     const justCopied = copiedVerse === key;
+                    const isFlashing = flashVerse === key;
 
                     return (
                       <span key={key}
-                        className={`verse-span relative inline cursor-pointer rounded-sm transition-colors duration-150 ${hl ? `hl-${hl.color}` : ''} ${isActive ? 'bg-accent-dim' : 'hover:bg-surface-hover/50'}`}
+                        id={`verse-${key}`}
+                        className={`verse-span relative inline cursor-pointer rounded-sm transition-colors duration-150 ${hl ? `hl-${hl.color}` : ''} ${isActive ? 'bg-accent-dim' : isFlashing ? 'bg-fg/10' : 'hover:bg-surface-hover/50'}`}
                         onClick={(e) => { e.stopPropagation(); setActiveVerse(isActive ? null : key); }}>
 
                         <AnimatePresence>
@@ -257,7 +302,7 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                                   onClick={() => { onToggleBookmark(verse.bookNumber, verse.chapter, verse.verse); setActiveVerse(null); }}
                                   whileTap={{ scale: 0.85 }}
                                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
-                                    bm ? 'text-accent bg-accent-dim' : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                                    bm ? 'text-accent bg-accent/10' : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
                                   }`}
                                   title={bm ? 'Remove bookmark' : 'Bookmark'}>
                                   {bm ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
@@ -274,13 +319,29 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                                   {justCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                 </motion.button>
 
+                                {/* Note */}
+                                {(() => {
+                                  const note = noteForVerse(verse.bookNumber, verse.chapter, verse.verse);
+                                  return (
+                                    <motion.button
+                                      onClick={() => { onToggleNote(verse.bookNumber, verse.chapter, verse.verse); setActiveVerse(null); }}
+                                      whileTap={{ scale: 0.85 }}
+                                      className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                                        note ? 'text-amber-400 bg-amber-400/10' : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                                      }`}
+                                      title={note ? 'Remove note' : 'Add note'}>
+                                      <StickyNote className="w-4 h-4" />
+                                    </motion.button>
+                                             );
+                                })()}
+
                                 <span className="w-px h-5 bg-border mx-1" />
 
                                 {/* Compare */}
                                 <motion.button
                                   onClick={() => { setCompareVerse({ bn: verse.bookNumber, ch: verse.chapter, v: verse.verse }); setActiveVerse(null); }}
                                   whileTap={{ scale: 0.95 }}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-fg-muted hover:text-accent hover:bg-accent-dim text-[11px] font-medium transition-all"
+                                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-fg-muted hover:text-accent hover:bg-accent/10 text-[11px] font-medium transition-all"
                                   title="Compare translations">
                                   <ArrowLeftRight className="w-3.5 h-3.5" />
                                   <span>Compare</span>
@@ -291,6 +352,9 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                         </AnimatePresence>
 
                         <VerseContent verse={verse} currentBook={currentBook} getHighlightFn={handleWordClick} />
+                        {note && !isActive && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent ml-0.5 align-middle" title="Has note" />
+                        )}
                       </span>
                     );
                   })}
@@ -320,7 +384,7 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
           {/* Parallel column */}
           {parallelMode && parallelVerses.length > 0 && (
             <div className="flex-1 px-6 py-12">
-              <div className="reader-text" style={{ opacity: 0.75 }}>
+              <div className="reader-text" style={{ opacity: 0.75, fontSize: `${fontSize}px` }}>
                 {parallelParagraphs.map((para, pIdx) => (
                   <p key={pIdx} className={`mb-6 ${pIdx === 0 ? 'drop-cap' : ''}`}>
                     {para.map(verse => (

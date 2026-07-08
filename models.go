@@ -48,3 +48,13 @@ type Highlight struct {
 	Translation string `json:"translation"`
 	CreatedAt   string `json:"createdAt"`
 }
+
+type Note struct {
+	ID          int    `json:"id"`
+	BookNumber  int    `json:"bookNumber"`
+	Chapter     int    `json:"chapter"`
+	Verse       int    `json:"verse"`
+	Content     string `json:"content"`
+	Translation string `json:"translation"`
+	CreatedAt   string `json:"createdAt"`
+}

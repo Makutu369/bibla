@@ -1,12 +1,18 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Bookmark, BookOpen, Calendar } from 'lucide-react';
+import { Search, Bookmark, BookOpen, Calendar, StickyNote, Library, List, Settings, Map } from 'lucide-react';
 import { Book } from '../types/bible';
 import { getBookTestament } from '../utils/text';
 import { BookmarksPanel } from './BookmarksPanel';
 import { DictionaryPanel } from './DictionaryPanel';
 import { ReadingPlanPanel } from './ReadingPlanPanel';
+import { NotesPanel } from './NotesPanel';
+import { TopicalPanel } from './TopicalPanel';
+import { SettingsPanel } from './SettingsPanel';
+import MapsPanel from './MapsPanel';
+import { Theme } from '../hooks/useTheme';
+import { Input } from './ui/Input';
 
-export type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan';
+export type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan' | 'notes' | 'topical' | 'settings' | 'maps';
 
 interface SidebarProps {
   books: Book[];
@@ -15,13 +21,22 @@ interface SidebarProps {
   chapters: number[];
   onSelectBook: (book: Book) => void;
   onSelectChapter: (chapter: number) => void;
-  onNavigate: (bookNumber: number, chapter: number) => void;
+  onNavigate: (bookNumber: number, chapter: number, verse?: number) => void;
   translation: string;
   onClosePanel: () => void;
   activePanel: SidebarTab | null;
   setActivePanel: (tab: SidebarTab | null) => void;
   dictSearch: string;
   onClearDictSearch: () => void;
+  noteCount: number;
+  onNavigateToVerse?: (bookNumber: number, chapter: number, verse?: number) => void;
+  onWordLookup?: (topic: string) => void;
+  fontSize: number;
+  onSetFontSize: (size: number) => void;
+  theme: Theme;
+  onSetTheme: (theme: Theme) => void;
+  readerWidth: number;
+  onSetReaderWidth: (width: number) => void;
 }
 
 function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter }: {
@@ -66,42 +81,42 @@ function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook,
 
   return (
     <>
-      <div className="px-4 pb-3">
+      <div className="px-3 pt-4 pb-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-muted" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
+          <Input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search books…"
-            className="w-full h-9 pl-9 pr-3 text-sm bg-surface border border-border rounded-full text-fg placeholder:text-fg-muted outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all" />
+            className="pl-9" />
         </div>
       </div>
 
-      <div className="px-4 pb-3 flex gap-1 bg-surface/50 mx-3 rounded-full p-1">
+      <div className="px-3 pb-3 flex gap-1 bg-surface/50 mx-2 rounded-xl p-1">
         {(['ot', 'nt'] as const).map(t => (
           <button key={t} onClick={() => { setTab(t); setSearch(''); }}
-            className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               tab === t
-                ? 'bg-accent text-white shadow-sm'
+                            ? 'bg-surface-active text-fg shadow-sm'
                 : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
             }`}>
-            {t === 'ot' ? 'OT' : 'NT'}
+            {t === 'ot' ? 'Old' : 'New'}
           </button>
         ))}
       </div>
 
-      <div ref={listRef} className="flex-1 overflow-y-auto px-3">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-2">
         {filtered.map(book => {
           const active = currentBook?.bookNumber === book.bookNumber;
           return (
             <div key={book.bookNumber}>
               <button ref={active ? activeRef : undefined}
                 onClick={() => onSelectBook(book)}
-                className={`w-full text-left px-3 py-2 rounded-full text-sm transition-all ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                   active
-                    ? 'text-accent bg-accent-dim font-medium'
+                    ? 'text-fg bg-surface-hover font-medium'
                     : 'text-fg-secondary hover:text-fg hover:bg-surface-hover'
                 }`}>
                 <span className="flex items-center gap-2">
-                  {active && <span className="accent-dot" />}
+                  {active && <span className="w-1.5 h-1.5 rounded-full bg-fg-muted" />}
                   {book.longName}
                 </span>
               </button>
@@ -112,7 +127,7 @@ function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook,
                       <button key={ch} onClick={() => onSelectChapter(ch)}
                         className={`w-9 h-9 rounded-full text-xs font-semibold transition-all ${
                           currentChapter === ch
-                            ? 'bg-accent text-white shadow-sm'
+                ? 'bg-surface-active text-fg shadow-sm'
                             : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
                         }`}>
                         {ch}
@@ -129,9 +144,17 @@ function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook,
   );
 }
 
-export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch }: SidebarProps) {
+const NAV_ITEMS: { id: SidebarTab; icon: typeof Bookmark; label: string }[] = [
+  { id: 'bookmarks', icon: Bookmark, label: 'Bookmarks' },
+  { id: 'notes', icon: StickyNote, label: 'Notes' },
+  { id: 'dictionary', icon: BookOpen, label: 'Dictionary' },
+  { id: 'topical', icon: List, label: "Nave's" },
+  { id: 'maps', icon: Map, label: 'Maps' },
+  { id: 'plan', icon: Calendar, label: 'Plan' },
+];
+
+export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch, noteCount, onNavigateToVerse, onWordLookup, fontSize, onSetFontSize, theme, onSetTheme, readerWidth, onSetReaderWidth }: SidebarProps) {
   const panel = activePanel;
-  const panelType = activePanel as string | null;
 
   const handlePanelSelect = (p: SidebarTab) => {
     if (activePanel === p) {
@@ -141,72 +164,108 @@ export function Sidebar({ books, currentBook, currentChapter, chapters, onSelect
     }
   };
 
-  if (panel === 'bookmarks') {
-    return (
-      <div className="flex flex-col h-full select-none">
-        <BookmarksPanel translation={translation} onNavigate={(bn, ch) => { onNavigate(bn, ch); setActivePanel(null); }} onClose={() => setActivePanel(null)} />
-      </div>
-    );
-  }
-
-  if (panel === 'dictionary') {
-    return (
-      <div className="flex flex-col h-full select-none">
-        <DictionaryPanel onClose={() => setActivePanel(null)} initialSearch={dictSearch} onClearSearch={onClearDictSearch} />
-      </div>
-    );
-  }
-
-  if (panel === 'plan') {
-    return (
-      <div className="flex flex-col h-full select-none">
-        <ReadingPlanPanel onNavigate={(bn, ch) => { onNavigate(bn, ch); setActivePanel(null); }} onClose={() => setActivePanel(null)} />
-      </div>
-    );
-  }
-
-  const isPanel = (p: string) => panelType === p;
+  const renderRightPanel = () => {
+    if (panel === 'bookmarks') {
+      return <BookmarksPanel translation={translation} onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
+    if (panel === 'dictionary') {
+      return <DictionaryPanel onClose={() => setActivePanel(null)} initialSearch={dictSearch} onClearSearch={onClearDictSearch} />;
+    }
+    if (panel === 'plan') {
+      return <ReadingPlanPanel onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
+    if (panel === 'notes') {
+      return <NotesPanel translation={translation} onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
+    if (panel === 'topical') {
+      return <TopicalPanel onClose={() => setActivePanel(null)} onNavigateToVerse={onNavigateToVerse} onWordLookup={onWordLookup} />;
+    }
+    if (panel === 'maps') {
+      return <MapsPanel onVerseClick={(book, chapter, verse) => { /* verse click handler */ setActivePanel(null); }} />;
+    }
+    if (panel === 'settings') {
+      return <SettingsPanel onClose={() => setActivePanel(null)} fontSize={fontSize} onSetFontSize={onSetFontSize} theme={theme} onSetTheme={onSetTheme} readerWidth={readerWidth} onSetReaderWidth={onSetReaderWidth} />;
+    }
+    return null;
+  };
 
   return (
-    <div className="flex flex-col h-full select-none bg-bg">
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-fg tracking-tight">Bibla</span>
+    <div className="flex h-full select-none" style={{ backgroundColor: 'var(--sidebar-bg, var(--bg))' }}>
+      {/* Icon strip */}
+      <div className="w-[52px] flex-shrink-0 flex flex-col items-center py-4 border-r border-border bg-bg/50">
+        {/* Book list icon (top) */}
+        <button
+          onClick={() => setActivePanel(null)}
+          className={`w-10 h-10 flex items-center justify-center rounded-full transition-all mb-1 ${
+            panel === null
+              ? 'bg-surface-active text-fg shadow-sm'
+              : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+          }`}
+          title="Books">
+          <Library className="w-[18px] h-[18px]" />
+        </button>
+
+        {/* Separator */}
+        <div className="w-5 h-px bg-border my-2" />
+
+        {/* Panel icons */}
+        <div className="flex flex-col gap-1">
+          {NAV_ITEMS.map(item => {
+            const isActive = panel === item.id;
+            const hasBadge = item.id === 'notes' && noteCount > 0;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handlePanelSelect(item.id)}
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all relative ${
+                  isActive
+                    ? 'bg-surface-active text-fg shadow-sm'
+                    : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                }`}
+                title={item.label}>
+                <item.icon className="w-[18px] h-[18px]" />
+                {hasBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent border-2 border-bg" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Settings icon (bottom) */}
+        <div className="mt-auto">
+          <div className="w-5 h-px bg-border my-2" />
+          <button
+            onClick={() => handlePanelSelect('settings')}
+            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+              panel === 'settings'
+                ? 'bg-surface-active text-fg shadow-sm'
+                : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+            }`}
+            title="Settings">
+            <Settings className="w-[18px] h-[18px]" />
+          </button>
         </div>
       </div>
 
-      <BooksList
-        books={books}
-        currentBook={currentBook}
-        currentChapter={currentChapter}
-        chapters={chapters}
-        onSelectBook={onSelectBook}
-        onSelectChapter={onSelectChapter}
-      />
-
-      {/* Bottom action bar */}
-      <div className="px-3 py-3 border-t border-border">
-        <div className="flex gap-1.5">
-          {([
-            { id: 'bookmarks' as SidebarTab, icon: Bookmark, label: 'Bookmarks' },
-            { id: 'dictionary' as SidebarTab, icon: BookOpen, label: 'Dictionary' },
-            { id: 'plan' as SidebarTab, icon: Calendar, label: 'Plan' },
-          ]).map(item => (
-            <button key={item.id} onClick={() => handlePanelSelect(item.id)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-full text-[11px] font-medium transition-all ${
-                isPanel(item.id)
-                  ? 'bg-accent text-white shadow-sm'
-                  : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
-              }`}>
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
+      {/* Right content area */}
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {panel === null ? (
+          <>
+            <BooksList
+              books={books}
+              currentBook={currentBook}
+              currentChapter={currentChapter}
+              chapters={chapters}
+              onSelectBook={onSelectBook}
+              onSelectChapter={onSelectChapter}
+            />
+          </>
+        ) : (
+          <div className="flex-1 overflow-hidden">
+            {renderRightPanel()}
+          </div>
+        )}
       </div>
     </div>
   );
