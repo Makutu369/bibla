@@ -12,24 +12,21 @@ import { useBookmarks } from './hooks/useBookmarks';
 import { useNotes } from './hooks/useNotes';
 import { useVerseLists } from './hooks/useVerseLists';
 
-const TRANSLATION_SETTINGS_KEY = 'bibla-translation-settings';
+const FONT_SIZE_KEY = 'bibla-font-size';
+const READER_WIDTH_KEY = 'bibla-reader-width';
 
-interface TranslationSettings {
-  [translation: string]: {
-    fontSize: number;
-    readerWidth: number;
-  };
-}
-
-function loadTranslationSettings(): TranslationSettings {
+function loadFontSize(): number {
   try {
-    const raw = localStorage.getItem(TRANSLATION_SETTINGS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+    const raw = localStorage.getItem(FONT_SIZE_KEY);
+    return raw ? parseInt(raw, 10) : 19;
+  } catch { return 19; }
 }
 
-function saveTranslationSettings(settings: TranslationSettings) {
-  localStorage.setItem(TRANSLATION_SETTINGS_KEY, JSON.stringify(settings));
+function loadReaderWidth(): number {
+  try {
+    const raw = localStorage.getItem(READER_WIDTH_KEY);
+    return raw ? parseInt(raw, 10) : 720;
+  } catch { return 720; }
 }
 
 interface HistoryEntry {
@@ -50,35 +47,21 @@ function App() {
   const [parallelTranslation, setParallelTranslation] = useState('');
   const [dictSearch, setDictSearch] = useState('');
 
-  // Font size (per-translation)
-  const [fontSize, setFontSize] = useState(() => 19);
+  // Font size (global)
+  const [fontSize, setFontSize] = useState(() => loadFontSize());
 
-  // Reader width (per-translation)
-  const [readerWidth, setReaderWidth] = useState(() => 720);
+  // Reader width (global)
+  const [readerWidth, setReaderWidth] = useState(() => loadReaderWidth());
 
-  // Update font size when translation changes
+  // Persist font size
   useEffect(() => {
-    if (bible.currentTranslation) {
-      const settings = loadTranslationSettings();
-      const ts = settings[bible.currentTranslation];
-      if (ts) {
-        setFontSize(ts.fontSize);
-        setReaderWidth(ts.readerWidth);
-      } else {
-        setFontSize(19);
-        setReaderWidth(720);
-      }
-    }
-  }, [bible.currentTranslation]);
+    localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
+  }, [fontSize]);
 
-  // Persist per-translation settings
+  // Persist reader width
   useEffect(() => {
-    if (bible.currentTranslation) {
-      const settings = loadTranslationSettings();
-      settings[bible.currentTranslation] = { fontSize, readerWidth };
-      saveTranslationSettings(settings);
-    }
-  }, [fontSize, readerWidth, bible.currentTranslation]);
+    localStorage.setItem(READER_WIDTH_KEY, String(readerWidth));
+  }, [readerWidth]);
 
   // Focus mode
   const [focusMode, setFocusMode] = useState(false);

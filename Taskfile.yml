@@ -5,6 +5,8 @@ vars:
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "pnpm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+  VERSION:
+    sh: 'git describe --tags --always 2>/dev/null || echo "dev"'
 
 includes:
   common: ./build/Taskfile.yml

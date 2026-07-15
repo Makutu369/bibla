@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/updater"
+	"github.com/wailsapp/wails/v3/pkg/updater/providers/github"
 )
 
 //go:embed all:frontend/dist
@@ -15,6 +19,8 @@ var assets embed.FS
 
 //go:embed bibles
 var embeddedBibles embed.FS
+
+var currentVersion = "dev"
 
 func getDataDir() string {
 	home, _ := os.UserHomeDir()
@@ -123,6 +129,56 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
+	})
+
+	// Initialize updater
+	gh, err := github.New(github.Config{
+		Repository:    "Makutu369/bibla",
+		ChecksumAsset: "SHA256SUMS",
+	})
+	if err != nil {
+		log.Fatalf("github.New: %v", err)
+	}
+	if err := app.Updater.Init(updater.Config{
+		CurrentVersion: currentVersion,
+		Providers:      []updater.Provider{gh},
+		CheckInterval:  24 * time.Hour,
+		Window: &updater.BuiltinWindow{
+			CSS: `:root {
+				--bg: #0f172a;
+				--surface: #1e293b;
+				--surface-2: #334155;
+				--fg: #f1f5f9;
+				--fg-dim: #94a3b8;
+				--fg-faint: #64748b;
+				--border: #334155;
+				--accent: #38bdf8;
+				--accent-fg: #0f172a;
+				--success: #22c55e;
+				--error: #ef4444;
+				--radius: 12px;
+			}`,
+		},
+	}); err != nil {
+		log.Fatalf("Updater.Init: %v", err)
+	}
+
+	// Add application menu with update check
+	menu := app.Menu.New()
+	app.Menu.SetApplicationMenu(menu)
+	appMenu := menu.AddSubmenu("App")
+	appMenu.Add("Check for Updates...").OnClick(func(*application.Context) {
+		go func() {
+			if err := app.Updater.CheckAndInstall(context.Background()); err != nil {
+				app.Logger.Error("update", "error", err)
+			}
+		}()
+	})
+	appMenu.Add("About Bibla").OnClick(func(*application.Context) {
+		app.Dialog.Info().
+			SetTitle("About Bibla").
+			SetMessage("Bibla - A beautiful Bible reader\nVersion: " + currentVersion).
+			Show()
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
