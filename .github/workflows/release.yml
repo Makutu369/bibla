@@ -43,9 +43,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          node-version: 22
 
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
@@ -54,6 +52,9 @@ jobs:
       - name: Build frontend
         run: pnpm build
         working-directory: frontend
+
+      - name: Install wails3
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
       - name: Generate bindings
         run: wails3 generate bindings -ts
