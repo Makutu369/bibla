@@ -1,6 +1,6 @@
 # Binaries
 bin/
-changeme
+/changeme
 
 # Wails build artifacts
 build/linux/appimage/build
