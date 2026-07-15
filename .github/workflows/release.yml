@@ -45,20 +45,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install system deps
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libgtk-4-dev libwebkit2gtk-6.0-dev
-
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
         working-directory: frontend
-
-      - name: Install wails3
-        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-
-      - name: Generate bindings
-        run: wails3 generate bindings -ts
 
       - name: Build frontend
         run: pnpm build
