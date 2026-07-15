@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
-import { Settings, Sun, Moon, Circle, Minus, Plus, RotateCcw, Palette, X } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Settings, Sun, Moon, Circle, Minus, Plus, RotateCcw, Palette, X, Download } from 'lucide-react';
 import { Theme } from '../hooks/useTheme';
+import { AppService } from '../../bindings/changeme';
 
 interface CustomTheme {
   name: string;
@@ -60,6 +61,12 @@ export function SettingsPanel({ onClose, fontSize, onSetFontSize, theme, onSetTh
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>(loadCustomThemes);
   const [showCustom, setShowCustom] = useState(false);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
+  const [version, setVersion] = useState('');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  useEffect(() => {
+    AppService.GetVersion().then(setVersion);
+  }, []);
 
   const applyCustomTheme = useCallback((t: CustomTheme) => {
     const root = document.documentElement;
@@ -105,6 +112,14 @@ export function SettingsPanel({ onClose, fontSize, onSetFontSize, theme, onSetTh
     setCustomThemes(updated);
     saveCustomThemes(updated);
   }, [customThemes]);
+
+  const handleCheckUpdates = useCallback(async () => {
+    setCheckingUpdate(true);
+    try {
+      await AppService.CheckForUpdates();
+    } catch {}
+    setCheckingUpdate(false);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -319,6 +334,25 @@ export function SettingsPanel({ onClose, fontSize, onSetFontSize, theme, onSetTh
               Reset to default
             </button>
           )}
+        </div>
+
+        {/* About */}
+        <div>
+          <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-3">About</h3>
+          <div className="p-3 rounded-xl bg-surface border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-fg">Bibla</span>
+              <span className="text-xs text-fg-muted font-mono">v{version}</span>
+            </div>
+            <p className="text-xs text-fg-muted">A beautiful Bible reader</p>
+            <button
+              onClick={handleCheckUpdates}
+              disabled={checkingUpdate}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors">
+              <Download className="w-3.5 h-3.5" />
+              {checkingUpdate ? 'Checking...' : 'Check for Updates'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

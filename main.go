@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"io/fs"
 	"log"
@@ -21,6 +20,8 @@ var assets embed.FS
 var embeddedBibles embed.FS
 
 var currentVersion = "dev"
+
+var appInst *application.App
 
 func getDataDir() string {
 	home, _ := os.UserHomeDir()
@@ -122,6 +123,7 @@ func main() {
 			application.NewService(commentaryService),
 			application.NewService(bookmarksService),
 			application.NewService(readingPlanService),
+			application.NewService(&AppService{}),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -130,6 +132,7 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
 	})
+	appInst = app
 
 	// Initialize updater
 	gh, err := github.New(github.Config{
@@ -162,24 +165,6 @@ func main() {
 	}); err != nil {
 		log.Fatalf("Updater.Init: %v", err)
 	}
-
-	// Add application menu with update check
-	menu := app.Menu.New()
-	app.Menu.SetApplicationMenu(menu)
-	appMenu := menu.AddSubmenu("App")
-	appMenu.Add("Check for Updates...").OnClick(func(*application.Context) {
-		go func() {
-			if err := app.Updater.CheckAndInstall(context.Background()); err != nil {
-				app.Logger.Error("update", "error", err)
-			}
-		}()
-	})
-	appMenu.Add("About Bibla").OnClick(func(*application.Context) {
-		app.Dialog.Info().
-			SetTitle("About Bibla").
-			SetMessage("Bibla - A beautiful Bible reader\nVersion: " + currentVersion).
-			Show()
-	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Bibla",
