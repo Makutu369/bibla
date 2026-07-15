@@ -158,19 +158,26 @@ export function DictionaryPanel({ onClose, initialSearch, onClearSearch }: Dicti
       </div>
 
       {dictionaries.length > 1 && (
-        <div className="px-4 pb-3 flex gap-1.5">
-          {dictionaries.map(dict => (
-            <button
-              key={dict}
-              onClick={() => handleDictChange(dict)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-                currentDict === dict
-                  ? 'border-accent/40 bg-accent/10 text-accent'
-                  : 'border-transparent text-fg-muted hover:text-fg hover:bg-surface-hover'
-              }`}>
-              {getDictDisplayName(dict)}
-            </button>
-          ))}
+        <div className="px-4 pb-3">
+          <div className="relative flex bg-surface rounded-full p-0.5 border border-border">
+            <div
+              className="absolute top-0.5 bottom-0.5 rounded-full bg-surface-active transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[transform]"
+              style={{
+                width: `calc(${100 / dictionaries.length}% - 4px)`,
+                transform: `translateX(calc(${dictionaries.indexOf(currentDict) * 100}% + ${dictionaries.indexOf(currentDict) * 4 + 2}px))`,
+              }}
+            />
+            {dictionaries.map(dict => (
+              <button
+                key={dict}
+                onClick={() => handleDictChange(dict)}
+                className={`relative z-10 flex-1 flex items-center justify-center px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                  currentDict === dict ? 'text-fg' : 'text-fg-muted hover:text-fg-secondary'
+                }`}>
+                {getDictDisplayName(dict)}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

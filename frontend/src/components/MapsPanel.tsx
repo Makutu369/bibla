@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import * as Maps from "../../bindings/changeme/mapsservice";
 import type { MapEntry } from "../types/maps";
 import { Input } from "./ui/Input";
-import { Map, Search, ChevronLeft, X } from "lucide-react";
+import { Map, MapPin, Search, ChevronLeft, X } from "lucide-react";
 import ImageModal from "./ImageModal";
 
 interface MapsPanelProps {
@@ -159,25 +159,35 @@ export function MapsPanel({ onVerseClick, onClose }: MapsPanelProps) {
       </div>
 
       {/* Tabs */}
-      <div className="px-4 pb-3 flex gap-1.5">
-        <button
-          onClick={() => setActiveTab("maps")}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-            activeTab === "maps"
-              ? "border-accent/40 bg-accent/10 text-accent"
-              : "border-transparent text-fg-muted hover:text-fg hover:bg-surface-hover"
-          }`}>
-          Maps
-        </button>
-        <button
-          onClick={() => setActiveTab("locations")}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
-            activeTab === "locations"
-              ? "border-accent/40 bg-accent/10 text-accent"
-              : "border-transparent text-fg-muted hover:text-fg hover:bg-surface-hover"
-          }`}>
-          Locations
-        </button>
+      <div className="px-4 pb-3">
+        <div className="relative flex bg-surface rounded-full p-0.5 border border-border">
+          <div
+            className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-surface-active transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[transform]"
+            style={{ transform: activeTab === "locations" ? "translateX(calc(100% + 4px))" : "translateX(0)" }}
+          />
+          <button
+            onClick={() => setActiveTab("maps")}
+            className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+              activeTab === "maps" ? "text-fg" : "text-fg-muted hover:text-fg-secondary"
+            }`}>
+            <Map className="w-3 h-3" />
+            <span>Maps</span>
+            {maps.length > 0 && (
+              <span className="text-[9px] tabular-nums opacity-50">{maps.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("locations")}
+            className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+              activeTab === "locations" ? "text-fg" : "text-fg-muted hover:text-fg-secondary"
+            }`}>
+            <MapPin className="w-3 h-3" />
+            <span>Locations</span>
+            {locations.length > 0 && (
+              <span className="text-[9px] tabular-nums opacity-50">{locations.length}</span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -249,11 +259,14 @@ export function MapsPanel({ onVerseClick, onClose }: MapsPanelProps) {
               <div key={i}>
                 <button
                   onClick={() => toggleLocation(i)}
-                  className="w-full text-left py-2.5 px-2 -mx-2 rounded-lg hover:bg-surface-hover transition-colors">
-                  <span className="text-xs font-medium text-fg">{loc.topic}</span>
+                  className="w-full text-left py-2.5 px-2 -mx-2 rounded-lg hover:bg-surface-hover transition-colors group">
+                  <div className="flex items-center gap-2">
+                    <ChevronLeft className={`w-3 h-3 text-fg-muted transition-transform duration-200 ${expandedLocations.has(i) ? "-rotate-90" : ""}`} />
+                    <span className="text-xs font-medium text-fg">{loc.topic}</span>
+                  </div>
                 </button>
                 {expandedLocations.has(i) && (
-                  <div className="px-2 pb-2 text-[11px] text-fg-secondary leading-relaxed">
+                  <div className="pl-5 pr-2 pb-2 text-[11px] text-fg-secondary leading-relaxed">
                     {stripHtml(loc.definition)}
                   </div>
                 )}
