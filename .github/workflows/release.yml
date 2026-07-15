@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: bibla-linux-amd64
+          - goos: linux
+            goarch: arm64
+            output: bibla-linux-arm64
+          - goos: darwin
+            goarch: arm64
+            output: bibla-darwin-arm64
+          - goos: darwin
+            goarch: amd64
+            output: bibla-darwin-amd64
+          - goos: windows
+            goarch: amd64
+            output: bibla-windows-amd64.exe
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build frontend
+        run: pnpm build
+        working-directory: frontend
+
+      - name: Generate bindings
+        run: wails3 generate bindings -ts
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          go build -tags production -trimpath \
+            -ldflags="-w -s -X main.currentVersion=${{ steps.version.outputs.VERSION }}" \
+            -o "bin/${{ matrix.output }}" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: bin/${{ matrix.output }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bin
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: bin
+        run: shasum -a 256 bibla* > SHA256SUMS
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            bin/bibla-linux-amd64
+            bin/bibla-linux-arm64
+            bin/bibla-darwin-arm64
+            bin/bibla-darwin-amd64
+            bin/bibla-windows-amd64.exe
+            bin/SHA256SUMS
