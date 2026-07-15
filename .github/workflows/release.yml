@@ -45,6 +45,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install system deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libgtk-4-dev libwebkit2gtk-6.0-dev
+
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
         working-directory: frontend
