@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { Calendar, CheckCircle2, Circle, ArrowRight } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, ArrowRight, X } from 'lucide-react';
 import { useReadingPlan } from '../hooks/useReadingPlan';
+import { BibleService } from '../../bindings/changeme';
+import { useState, useEffect } from 'react';
 
 interface ReadingPlanPanelProps {
   onNavigate: (bookNumber: number, chapter: number, verse?: number) => void;
@@ -9,10 +11,23 @@ interface ReadingPlanPanelProps {
 
 export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps) {
   const { plan, markDone, unmarkDone, isDone, getTodayReadings, getCompletionPercent, activatePlan } = useReadingPlan();
+  const [bookNames, setBookNames] = useState<Record<number, string>>({});
 
   const todayReadings = getTodayReadings();
   const completedCount = todayReadings.filter(r => isDone(r.bookNumber, r.chapter)).length;
   const totalCount = todayReadings.length;
+
+  useEffect(() => {
+    const loadNames = async () => {
+      const nums = [...new Set(todayReadings.map(r => r.bookNumber))];
+      const names: Record<number, string> = {};
+      for (const n of nums) {
+        try { names[n] = await BibleService.GetBookName('KJV', n); } catch {}
+      }
+      setBookNames(names);
+    };
+    if (todayReadings.length > 0) loadNames();
+  }, [todayReadings]);
 
   if (!plan) {
     return (
@@ -24,7 +39,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
           </div>
           <button onClick={onClose}
             className="w-6 h-6 flex items-center justify-center rounded-full text-fg-muted hover:text-fg hover:bg-surface-hover transition-colors">
-            <span className="text-lg leading-none">&times;</span>
+            <span className="text-lg leading-none"><X className="w-3.5 h-3.5" /></span>
           </button>
         </div>
 
@@ -52,9 +67,9 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
         </div>
         <button onClick={onClose}
           className="w-6 h-6 flex items-center justify-center rounded-full text-fg-muted hover:text-fg hover:bg-surface-hover transition-colors">
-          <span className="text-lg leading-none">&times;</span>
-        </button>
-      </div>
+            <span className="text-lg leading-none"><X className="w-3.5 h-3.5" /></span>
+          </button>
+        </div>
 
       <div className="px-3 pb-3">
         <div className="p-3 rounded-full bg-surface border border-border">
@@ -108,7 +123,7 @@ export function ReadingPlanPanel({ onNavigate, onClose }: ReadingPlanPanelProps)
                   onClick={() => onNavigate(r.bookNumber, r.chapter)}
                   className={`flex-1 text-left text-sm transition-colors ${done ? 'text-fg-muted line-through' : 'text-fg-secondary hover:text-fg'}`}
                 >
-                  Chapter {r.chapter}
+                  {bookNames[r.bookNumber] || 'Book'} {r.chapter}
                 </button>
                 <ArrowRight className="w-3 h-3 text-fg-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </motion.div>

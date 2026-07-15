@@ -48,5 +48,5 @@ export function useHighlights(translation: string) {
     return highlights.find(h => h.bookNumber === bookNumber && h.chapter === chapter && h.verse === verse);
   }, [highlights]);
 
-  return { highlights, addHighlight, removeHighlight, toggleHighlight, getHighlight };
+  return { highlights, addHighlight, removeHighlight, toggleHighlight, getHighlight, reload: loadHighlights };
 }

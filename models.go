@@ -58,3 +58,20 @@ type Note struct {
 	Translation string `json:"translation"`
 	CreatedAt   string `json:"createdAt"`
 }
+
+type VerseList struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Translation string `json:"translation"`
+	CreatedAt   string `json:"createdAt"`
+}
+
+type VerseListItem struct {
+	ID          int    `json:"id"`
+	ListID      int    `json:"listId"`
+	BookNumber  int    `json:"bookNumber"`
+	Chapter     int    `json:"chapter"`
+	Verse       int    `json:"verse"`
+	SortOrder   int    `json:"sortOrder"`
+	CreatedAt   string `json:"createdAt"`
+}

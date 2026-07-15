@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, List, ArrowLeft, ChevronRight } from 'lucide-react';
+import { X, List, ArrowLeft, ChevronRight, Clock } from 'lucide-react';
 import { TopicalService } from '../../bindings/changeme';
 import { Input } from './ui/Input';
 
@@ -20,6 +20,25 @@ interface TopicalPanelProps {
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const TOPICAL_HISTORY_KEY = 'bibla-topical-history';
+const MAX_HISTORY = 12;
+
+function getTopicalHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(TOPICAL_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveTopicalHistory(topic: string) {
+  const history = getTopicalHistory().filter(h => h !== topic);
+  history.unshift(topic);
+  localStorage.setItem(TOPICAL_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+}
+
+function clearTopicalHistory() {
+  localStorage.removeItem(TOPICAL_HISTORY_KEY);
+}
 
 // Frontend caches
 const letterCache = new Map<string, TopicListItem[]>();
@@ -64,22 +83,18 @@ function parseVerseRefsFromDef(html: string): { bn: number; ch: number; v: numbe
 function parseDefinitionBlocks(html: string): { type: string; text: string; indent: boolean; strong?: string; verseRef?: { bn: number; ch: number; v: number } }[] {
   const blocks: { type: string; text: string; indent: boolean; strong?: string; verseRef?: { bn: number; ch: number; v: number } }[] = [];
 
-  // Split by <br> tags first
   const lines = html.split(/<br\s*\/?>/i);
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Split each line by semicolons to handle multiple refs on one line
-    // But keep semicolons that are inside tags
     const segments = splitBySemicolon(trimmed);
 
     for (const seg of segments) {
       const s = seg.trim();
       if (!s) continue;
 
-      // Check for verse reference link
       const verseRefMatch = s.match(/<a href='B:(\d+)\s+(\d+):(\d+)'>[^<]*<\/a>/);
       if (verseRefMatch) {
         const bn = parseInt(verseRefMatch[1]);
@@ -91,21 +106,18 @@ function parseDefinitionBlocks(html: string): { type: string; text: string; inde
         continue;
       }
 
-      // Check for Strong's link
       const strongMatch = s.match(/<a href='S:([HG]\d+)'>[^<]*<\/a>/);
       if (strongMatch) {
         blocks.push({ type: 'strong', text: strongMatch[1], indent: false, strong: strongMatch[1] });
         continue;
       }
 
-      // Check for cross-reference link (topic name)
       const crossRefMatch = s.match(/<a href='S:([^']+)'>([^<]+)<\/a>/);
       if (crossRefMatch) {
         blocks.push({ type: 'crossref', text: crossRefMatch[2], indent: false, strong: crossRefMatch[1] });
         continue;
       }
 
-      // Clean HTML tags
       const clean = s
         .replace(/<b>([^<]+)<\/b>/g, '$1')
         .replace(/<[^>]+>/g, '')
@@ -114,7 +126,6 @@ function parseDefinitionBlocks(html: string): { type: string; text: string; inde
 
       if (!clean) continue;
 
-      // Detect sub-entry patterns
       if (clean.startsWith('- ')) {
         blocks.push({ type: 'sub-entry', text: clean.slice(2), indent: true });
       } else if (/^\d+\.\s/.test(clean)) {
@@ -130,7 +141,6 @@ function parseDefinitionBlocks(html: string): { type: string; text: string; inde
   return blocks;
 }
 
-// Split a line by semicolons that are not inside HTML tags
 function splitBySemicolon(line: string): string[] {
   const result: string[] = [];
   let current = '';
@@ -138,18 +148,10 @@ function splitBySemicolon(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
-    if (ch === '<') {
-      inTag = true;
-      current += ch;
-    } else if (ch === '>') {
-      inTag = false;
-      current += ch;
-    } else if (ch === ';' && !inTag) {
-      result.push(current);
-      current = '';
-    } else {
-      current += ch;
-    }
+    if (ch === '<') { inTag = true; current += ch; }
+    else if (ch === '>') { inTag = false; current += ch; }
+    else if (ch === ';' && !inTag) { result.push(current); current = ''; }
+    else { current += ch; }
   }
   if (current) result.push(current);
   return result;
@@ -167,15 +169,17 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Load alphabet index on mount
+  // Load alphabet index and history on mount
   useEffect(() => {
     TopicalService.GetAlphabetIndex().then(idx => {
       setAlphabetIndex((idx as Record<string, number>) || {});
       setInitialLoading(false);
     });
+    setHistory(getTopicalHistory());
   }, []);
 
   // Load topics when letter changes (with cache)
@@ -233,7 +237,9 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
   }, [doSearch]);
 
   const handleTopicClick = useCallback(async (topic: string) => {
-    // Check cache first
+    saveTopicalHistory(topic);
+    setHistory(getTopicalHistory());
+
     const cached = definitionCache.get(topic);
     if (cached !== undefined) {
       setSelectedTopic({ topic, definition: cached });
@@ -260,6 +266,16 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
     setLoading(false);
   }, []);
 
+  const handleHistoryClick = useCallback((topic: string) => {
+    setQuery(topic);
+    handleSearch(topic);
+  }, [handleSearch]);
+
+  const handleClearHistory = useCallback(() => {
+    clearTopicalHistory();
+    setHistory([]);
+  }, []);
+
   const handleCrossRef = useCallback((topicName: string) => {
     handleTopicClick(topicName);
   }, [handleTopicClick]);
@@ -282,6 +298,7 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
   };
 
   const currentList = view === 'search' ? searchResults : topics.map(t => ({ topic: t.topic, definition: '' }));
+  const showHistory = view === 'browse' && !query && history.length > 0;
 
   const detailBlocks = selectedTopic ? parseDefinitionBlocks(selectedTopic.definition) : [];
   const detailIsLong = selectedTopic ? selectedTopic.definition.length > 500 : false;
@@ -379,8 +396,36 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
         </div>
       </div>
 
-      {/* Letter tabs (browse mode only) */}
-      {view === 'browse' && !query && (
+      {/* Search history (browse mode, no query) */}
+      {showHistory && (
+        <div className="px-3 pb-2">
+          <div className="flex items-center justify-between px-1 mb-1.5">
+            <span className="text-[11px] font-semibold text-fg-muted uppercase tracking-wider">Recent</span>
+            <button onClick={handleClearHistory}
+              className="text-[10px] text-fg-muted hover:text-fg transition-colors">
+              Clear
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {history.map((topic, i) => (
+              <motion.button
+                key={topic}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => handleHistoryClick(topic)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-surface border border-border text-fg-secondary hover:border-border-focus hover:text-fg"
+              >
+                <Clock className="w-3 h-3 text-fg-muted" />
+                {topic}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Letter tabs (browse mode only, when no history shown or history is empty) */}
+      {view === 'browse' && !query && !showHistory && (
         <div className="px-3 pb-2">
           <div className="flex flex-wrap gap-0.5">
             {LETTERS.map(L => {
@@ -436,8 +481,60 @@ export function TopicalPanel({ onClose, onNavigateToVerse, onWordLookup }: Topic
           </div>
         )}
 
-        {/* Browse/Search list */}
-        {!initialLoading && !loading && !searching && view !== 'detail' && (
+        {/* Browse letter topics (when history is shown, still allow browsing below) */}
+        {showHistory && !loading && (
+          <>
+            <div className="px-1 mb-1.5 mt-2">
+              <span className="text-[11px] font-semibold text-fg-muted uppercase tracking-wider">Browse by letter</span>
+            </div>
+            <div className="flex flex-wrap gap-0.5 mb-3">
+              {LETTERS.map(L => {
+                const count = alphabetIndex[L] || 0;
+                return (
+                  <button key={L} onClick={() => { setSelectedLetter(L); }}
+                    className={`min-w-[22px] h-6 px-1 rounded text-[10px] font-semibold transition-all ${
+                      selectedLetter === L
+                        ? 'bg-surface-active text-fg'
+                        : count > 0
+                          ? 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                          : 'text-fg-muted/30 cursor-default'
+                    }`}>
+                    {L}
+                  </button>
+                );
+              })}
+            </div>
+            {!loading && topics.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between px-1 mb-1.5">
+                  <span className="text-[11px] font-semibold text-fg-muted uppercase tracking-wider">{selectedLetter}</span>
+                  <span className="text-[10px] text-fg-muted">{topics.length} topics</span>
+                </div>
+                {topics.slice(0, 20).map((entry, i) => (
+                  <motion.button
+                    key={`${entry.topic}-${i}`}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                    onClick={() => handleTopicClick(entry.topic)}
+                    className="w-full flex items-center justify-between py-2 px-2 rounded-lg text-sm text-fg-secondary hover:text-fg hover:bg-surface-hover transition-colors text-left"
+                  >
+                    <span>{entry.topic}</span>
+                    <ChevronRight className="w-3 h-3 text-fg-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </motion.button>
+                ))}
+                {topics.length > 20 && (
+                  <div className="text-center py-2">
+                    <span className="text-[10px] text-fg-muted">Showing 20 of {topics.length}. Use letter tabs to browse all.</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Browse/Search list (no history) */}
+        {!initialLoading && !loading && !searching && view !== 'detail' && !showHistory && (
           <>
             {currentList.length === 0 && (
               <div className="text-center py-8 text-sm text-fg-muted">

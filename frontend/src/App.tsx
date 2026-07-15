@@ -10,8 +10,27 @@ import { useTheme } from './hooks/useTheme';
 import { useHighlights } from './hooks/useHighlights';
 import { useBookmarks } from './hooks/useBookmarks';
 import { useNotes } from './hooks/useNotes';
+import { useVerseLists } from './hooks/useVerseLists';
 
+const TRANSLATION_SETTINGS_KEY = 'bibla-translation-settings';
 
+interface TranslationSettings {
+  [translation: string]: {
+    fontSize: number;
+    readerWidth: number;
+  };
+}
+
+function loadTranslationSettings(): TranslationSettings {
+  try {
+    const raw = localStorage.getItem(TRANSLATION_SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveTranslationSettings(settings: TranslationSettings) {
+  localStorage.setItem(TRANSLATION_SETTINGS_KEY, JSON.stringify(settings));
+}
 
 interface HistoryEntry {
   bookNumber: number;
@@ -26,21 +45,40 @@ function App() {
   const hl = useHighlights(bible.currentTranslation);
   const bm = useBookmarks(bible.currentTranslation);
   const nt = useNotes(bible.currentTranslation);
+  const vl = useVerseLists(bible.currentTranslation);
   const [parallelMode, setParallelMode] = useState(false);
   const [parallelTranslation, setParallelTranslation] = useState('');
   const [dictSearch, setDictSearch] = useState('');
 
-  // Font size
-  const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('bibla-font-size');
-    return saved ? parseInt(saved, 10) : 19;
-  });
+  // Font size (per-translation)
+  const [fontSize, setFontSize] = useState(() => 19);
 
-  // Reader width
-  const [readerWidth, setReaderWidth] = useState(() => {
-    const saved = localStorage.getItem('bibla-reader-width');
-    return saved ? parseInt(saved, 10) : 720;
-  });
+  // Reader width (per-translation)
+  const [readerWidth, setReaderWidth] = useState(() => 720);
+
+  // Update font size when translation changes
+  useEffect(() => {
+    if (bible.currentTranslation) {
+      const settings = loadTranslationSettings();
+      const ts = settings[bible.currentTranslation];
+      if (ts) {
+        setFontSize(ts.fontSize);
+        setReaderWidth(ts.readerWidth);
+      } else {
+        setFontSize(19);
+        setReaderWidth(720);
+      }
+    }
+  }, [bible.currentTranslation]);
+
+  // Persist per-translation settings
+  useEffect(() => {
+    if (bible.currentTranslation) {
+      const settings = loadTranslationSettings();
+      settings[bible.currentTranslation] = { fontSize, readerWidth };
+      saveTranslationSettings(settings);
+    }
+  }, [fontSize, readerWidth, bible.currentTranslation]);
 
   // Focus mode
   const [focusMode, setFocusMode] = useState(false);
@@ -119,15 +157,6 @@ function App() {
     ignoreHistory.current = true;
     nav(bn, ch, v);
   }, [nav]);
-
-  // Font size persistence
-  useEffect(() => {
-    localStorage.setItem('bibla-font-size', String(fontSize));
-  }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('bibla-reader-width', String(readerWidth));
-  }, [readerWidth]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -272,6 +301,8 @@ function App() {
             onSetTheme={theme.setTheme}
             readerWidth={readerWidth}
             onSetReaderWidth={setReaderWidth}
+            currentBookNumber={bible.currentBook?.bookNumber || 10}
+            currentChapterNum={bible.currentChapter}
           />
         </div>
       )}
@@ -332,6 +363,9 @@ function App() {
             onNavigateToVerse={navigateToVerse}
             scrollToVerse={scrollToVerse}
             onClearScrollToVerse={() => setScrollToVerse(null)}
+            verseLists={vl.lists}
+            onAddToVerseList={vl.addToList}
+            onCreateVerseList={vl.createList}
           />
         </div>
       </div>

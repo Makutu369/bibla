@@ -22,45 +22,45 @@ function dateHash(dateStr: string): number {
 
 // Famous verses: [bookNumber, chapter, verse]
 const FAVORITE_VERSES: [number, number, number][] = [
-  [320, 11, 28],   // Matthew 11:28
-  [350, 3, 16],    // John 3:16
-  [560, 21, 4],    // Revelation 21:4
+  [470, 11, 28],   // Matthew 11:28
+  [500, 3, 16],    // John 3:16
+  [730, 21, 4],    // Revelation 21:4
   [170, 23, 1],    // Psalm 23:1
   [200, 40, 31],   // Isaiah 40:31
-  [340, 15, 13],   // Luke 15:13
-  [180, 3, 5],     // Proverbs 3:5
-  [370, 8, 28],    // Romans 8:28
-  [410, 2, 10],    // Ephesians 2:10
-  [490, 11, 1],    // Hebrews 11:1
-  [530, 4, 18],    // 1 John 4:18
+  [490, 15, 13],   // Luke 15:13
+  [240, 3, 5],     // Proverbs 3:5
+  [520, 8, 28],    // Romans 8:28
+  [560, 2, 10],    // Ephesians 2:10
+  [650, 11, 1],    // Hebrews 11:1
+  [690, 4, 18],    // 1 John 4:18
   [170, 119, 105], // Psalm 119:105
   [200, 41, 10],   // Isaiah 41:10
-  [320, 5, 14],    // Matthew 5:14
+  [470, 5, 14],    // Matthew 5:14
   [10, 1, 1],      // Genesis 1:1
-  [180, 3, 6],     // Proverbs 3:6
-  [360, 1, 1],     // Acts 1:1
-  [380, 13, 4],    // 1 Cor 13:4
+  [240, 3, 6],     // Proverbs 3:6
+  [510, 1, 1],     // Acts 1:1
+  [530, 13, 4],    // 1 Corinthians 13:4
   [170, 46, 10],   // Psalm 46:10
   [200, 53, 5],    // Isaiah 53:5
-  [340, 6, 35],    // Luke 6:35
-  [400, 5, 22],    // Galatians 5:22
-  [180, 16, 3],    // Proverbs 16:3
+  [490, 6, 35],    // Luke 6:35
+  [550, 5, 22],    // Galatians 5:22
+  [240, 16, 3],    // Proverbs 16:3
   [170, 37, 4],    // Psalm 37:4
-  [350, 14, 27],   // John 14:27
-  [150, 11, 5],    // Nehemiah 1:5
-  [320, 6, 33],    // Matthew 6:33
+  [500, 14, 27],   // John 14:27
+  [160, 1, 5],     // Nehemiah 1:5
+  [470, 6, 33],    // Matthew 6:33
   [170, 56, 3],    // Psalm 56:3
   [200, 30, 18],   // Isaiah 30:18
-  [440, 4, 13],    // Philippians 4:13
-  [350, 10, 10],   // John 10:10
-  [160, 3, 23],    // Job 3:23 -- actually Job 1:22 or Ecclesiastes
+  [570, 4, 13],    // Philippians 4:13
+  [500, 10, 10],   // John 10:10
+  [220, 1, 22],    // Job 1:22
   [190, 3, 1],     // Ecclesiastes 3:1
-  [350, 8, 32],    // John 8:32
-  [320, 19, 26],   // Matthew 19:26
-  [180, 4, 25],    // Proverbs 4:25
+  [500, 8, 32],    // John 8:32
+  [470, 19, 26],   // Matthew 19:26
+  [240, 4, 25],    // Proverbs 4:25
   [170, 91, 11],   // Psalm 91:11
-  [340, 1, 37],    // Luke 1:37
-  [330, 14, 6],    // Mark 14:6
+  [490, 1, 37],    // Luke 1:37
+  [480, 14, 6],    // Mark 14:6
   [170, 139, 14],  // Psalm 139:14
 ];
 

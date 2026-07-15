@@ -54,8 +54,8 @@ export function BookmarksPanel({ translation, onNavigate, onClose }: BookmarksPa
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {bookmarks.length === 0 ? (
-          <div className="text-center py-12 text-sm text-fg-muted">
-            <Bookmark className="w-8 h-8 mx-auto mb-3 opacity-30" />
+          <div className="text-center py-16 text-sm text-fg-muted">
+            <Bookmark className="w-7 h-7 mx-auto mb-3 opacity-20" />
             <p>No bookmarks yet</p>
             <p className="text-xs mt-1">Tap a verse and use the bookmark icon</p>
           </div>
@@ -66,7 +66,7 @@ export function BookmarksPanel({ translation, onNavigate, onClose }: BookmarksPa
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02 }}
-              className="px-3 py-2.5 rounded-full hover:bg-surface-hover transition-colors group"
+              className="px-3 py-2.5 rounded-lg hover:bg-surface-hover transition-colors group"
             >
               <button
                 onClick={() => onNavigate(b.bookNumber, b.chapter, b.verse)}

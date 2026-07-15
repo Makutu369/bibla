@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Bookmark, BookOpen, Calendar, StickyNote, Library, List, Settings, Map } from 'lucide-react';
+import { Search, Bookmark, BookOpen, Calendar, StickyNote, Library, List, Settings, Map, Highlighter, ListPlus, MessageSquare } from 'lucide-react';
 import { Book } from '../types/bible';
 import { getBookTestament } from '../utils/text';
 import { BookmarksPanel } from './BookmarksPanel';
@@ -8,11 +8,14 @@ import { ReadingPlanPanel } from './ReadingPlanPanel';
 import { NotesPanel } from './NotesPanel';
 import { TopicalPanel } from './TopicalPanel';
 import { SettingsPanel } from './SettingsPanel';
-import MapsPanel from './MapsPanel';
+import { MapsPanel } from './MapsPanel';
+import { HighlightsPanel } from './HighlightsPanel';
+import { VerseListsPanel } from './VerseListsPanel';
+import { CommentaryPanel } from './CommentaryPanel';
 import { Theme } from '../hooks/useTheme';
 import { Input } from './ui/Input';
 
-export type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan' | 'notes' | 'topical' | 'settings' | 'maps';
+export type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan' | 'notes' | 'topical' | 'settings' | 'maps' | 'highlights' | 'verselists' | 'commentary';
 
 interface SidebarProps {
   books: Book[];
@@ -37,6 +40,8 @@ interface SidebarProps {
   onSetTheme: (theme: Theme) => void;
   readerWidth: number;
   onSetReaderWidth: (width: number) => void;
+  currentBookNumber: number;
+  currentChapterNum: number;
 }
 
 function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter }: {
@@ -146,14 +151,17 @@ function BooksList({ books, currentBook, currentChapter, chapters, onSelectBook,
 
 const NAV_ITEMS: { id: SidebarTab; icon: typeof Bookmark; label: string }[] = [
   { id: 'bookmarks', icon: Bookmark, label: 'Bookmarks' },
+  { id: 'highlights', icon: Highlighter, label: 'Highlights' },
   { id: 'notes', icon: StickyNote, label: 'Notes' },
+  { id: 'verselists', icon: ListPlus, label: 'Verse Lists' },
+  { id: 'commentary', icon: MessageSquare, label: 'Commentary' },
   { id: 'dictionary', icon: BookOpen, label: 'Dictionary' },
   { id: 'topical', icon: List, label: "Nave's" },
   { id: 'maps', icon: Map, label: 'Maps' },
   { id: 'plan', icon: Calendar, label: 'Plan' },
 ];
 
-export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch, noteCount, onNavigateToVerse, onWordLookup, fontSize, onSetFontSize, theme, onSetTheme, readerWidth, onSetReaderWidth }: SidebarProps) {
+export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch, noteCount, onNavigateToVerse, onWordLookup, fontSize, onSetFontSize, theme, onSetTheme, readerWidth, onSetReaderWidth, currentBookNumber, currentChapterNum }: SidebarProps) {
   const panel = activePanel;
 
   const handlePanelSelect = (p: SidebarTab) => {
@@ -168,6 +176,9 @@ export function Sidebar({ books, currentBook, currentChapter, chapters, onSelect
     if (panel === 'bookmarks') {
       return <BookmarksPanel translation={translation} onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
     }
+    if (panel === 'highlights') {
+      return <HighlightsPanel translation={translation} onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
     if (panel === 'dictionary') {
       return <DictionaryPanel onClose={() => setActivePanel(null)} initialSearch={dictSearch} onClearSearch={onClearDictSearch} />;
     }
@@ -181,7 +192,13 @@ export function Sidebar({ books, currentBook, currentChapter, chapters, onSelect
       return <TopicalPanel onClose={() => setActivePanel(null)} onNavigateToVerse={onNavigateToVerse} onWordLookup={onWordLookup} />;
     }
     if (panel === 'maps') {
-      return <MapsPanel onVerseClick={(book, chapter, verse) => { /* verse click handler */ setActivePanel(null); }} />;
+      return <MapsPanel onVerseClick={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
+    if (panel === 'verselists') {
+      return <VerseListsPanel translation={translation} onNavigate={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
+    }
+    if (panel === 'commentary') {
+      return <CommentaryPanel translation={translation} bookNumber={currentBookNumber} chapter={currentChapterNum} onNavigateToVerse={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
     }
     if (panel === 'settings') {
       return <SettingsPanel onClose={() => setActivePanel(null)} fontSize={fontSize} onSetFontSize={onSetFontSize} theme={theme} onSetTheme={onSetTheme} readerWidth={readerWidth} onSetReaderWidth={onSetReaderWidth} />;

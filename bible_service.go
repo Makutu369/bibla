@@ -151,6 +151,27 @@ func (b *BibleService) GetVerses(translation string, bookNumber int, chapter int
 	return verses
 }
 
+func (b *BibleService) GetVerse(translation string, bookNumber int, chapter int, verse int) *Verse {
+	if translation == "" {
+		translation = b.defaultTranslation()
+	}
+	db, err := b.openDB(translation)
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	var v Verse
+	err = db.QueryRow(
+		"SELECT book_number, chapter, verse, text FROM verses WHERE book_number = ? AND chapter = ? AND verse = ?",
+		bookNumber, chapter, verse,
+	).Scan(&v.BookNumber, &v.Chapter, &v.Verse, &v.Text)
+	if err != nil {
+		return nil
+	}
+	return &v
+}
+
 func (b *BibleService) Search(translation string, query string) []SearchResult {
 	if translation == "" {
 		translation = b.defaultTranslation()

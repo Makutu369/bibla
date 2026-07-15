@@ -62,7 +62,15 @@ export const HIGHLIGHT_COLORS = [
   { name: 'Green', value: 'green', hex: '#22c55e' },
   { name: 'Orange', value: 'orange', hex: '#f97316' },
   { name: 'Pink', value: 'pink', hex: '#ec4899' },
+  { name: 'Purple', value: 'purple', hex: '#a855f7' },
 ];
 
 export const OT_BOOKS = Array.from({ length: 46 }, (_, i) => (i + 1) * 10);
 export const NT_BOOKS = Array.from({ length: 27 }, (_, i) => (i + 47) * 10);
+
+export interface VerseList {
+  id: number;
+  name: string;
+  translation: string;
+  createdAt: string;
+}

@@ -57,6 +57,27 @@ func NewBookmarksService(dataDir string) (*BookmarksService, error) {
 		)
 	`)
 
+	db.Exec(`
+		CREATE TABLE IF NOT EXISTS verse_lists (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			translation TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	db.Exec(`
+		CREATE TABLE IF NOT EXISTS verse_list_items (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			list_id INTEGER NOT NULL,
+			book_number INTEGER NOT NULL,
+			chapter INTEGER NOT NULL,
+			verse INTEGER NOT NULL,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (list_id) REFERENCES verse_lists(id) ON DELETE CASCADE
+		)
+	`)
+
 	return &BookmarksService{dbPath: dbPath}, nil
 }
 
@@ -261,4 +282,113 @@ func (s *BookmarksService) GetNoteForVerse(bookNumber, chapter, verse int) *Note
 		return nil
 	}
 	return &n
+}
+
+func (s *BookmarksService) CreateVerseList(translation, name string) (VerseList, error) {
+	db, err := s.openDB()
+	if err != nil {
+		return VerseList{}, err
+	}
+	defer db.Close()
+
+	now := time.Now().Format(time.RFC3339)
+	result, err := db.Exec(
+		"INSERT INTO verse_lists (name, translation, created_at) VALUES (?, ?, ?)",
+		name, translation, now,
+	)
+	if err != nil {
+		return VerseList{}, err
+	}
+	id, _ := result.LastInsertId()
+	return VerseList{ID: int(id), Name: name, Translation: translation, CreatedAt: now}, nil
+}
+
+func (s *BookmarksService) DeleteVerseList(id int) error {
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	db.Exec("DELETE FROM verse_list_items WHERE list_id = ?", id)
+	_, err = db.Exec("DELETE FROM verse_lists WHERE id = ?", id)
+	return err
+}
+
+func (s *BookmarksService) GetVerseLists(translation string) []VerseList {
+	db, err := s.openDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT id, name, translation, created_at FROM verse_lists WHERE translation = ? ORDER BY created_at DESC", translation)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var lists []VerseList
+	for rows.Next() {
+		var l VerseList
+		rows.Scan(&l.ID, &l.Name, &l.Translation, &l.CreatedAt)
+		lists = append(lists, l)
+	}
+	return lists
+}
+
+func (s *BookmarksService) AddToVerseList(listID, bookNumber, chapter, verse int) (VerseListItem, error) {
+	db, err := s.openDB()
+	if err != nil {
+		return VerseListItem{}, err
+	}
+	defer db.Close()
+
+	var maxOrder int
+	db.QueryRow("SELECT COALESCE(MAX(sort_order), 0) FROM verse_list_items WHERE list_id = ?", listID).Scan(&maxOrder)
+
+	now := time.Now().Format(time.RFC3339)
+	result, err := db.Exec(
+		"INSERT INTO verse_list_items (list_id, book_number, chapter, verse, sort_order, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		listID, bookNumber, chapter, verse, maxOrder+1, now,
+	)
+	if err != nil {
+		return VerseListItem{}, err
+	}
+	id, _ := result.LastInsertId()
+	return VerseListItem{ID: int(id), ListID: listID, BookNumber: bookNumber, Chapter: chapter, Verse: verse, SortOrder: maxOrder + 1, CreatedAt: now}, nil
+}
+
+func (s *BookmarksService) RemoveFromVerseList(listID, itemID int) error {
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	_, err = db.Exec("DELETE FROM verse_list_items WHERE id = ? AND list_id = ?", itemID, listID)
+	return err
+}
+
+func (s *BookmarksService) GetVerseListItems(translation string, listID int) []VerseListItem {
+	db, err := s.openDB()
+	if err != nil {
+		return nil
+	}
+	defer db.Close()
+
+	rows, err := db.Query(
+		"SELECT id, list_id, book_number, chapter, verse, sort_order, created_at FROM verse_list_items WHERE list_id = ? ORDER BY sort_order",
+		listID,
+	)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var items []VerseListItem
+	for rows.Next() {
+		var item VerseListItem
+		rows.Scan(&item.ID, &item.ListID, &item.BookNumber, &item.Chapter, &item.Verse, &item.SortOrder, &item.CreatedAt)
+		items = append(items, item)
+	}
+	return items
 }

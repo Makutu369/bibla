@@ -5,7 +5,7 @@ import { BookmarksService } from '../../bindings/changeme';
 export function useBookmarks(translation: string) {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 
-  useEffect(() => { loadBookmarks(); }, []);
+  useEffect(() => { loadBookmarks(); }, [translation]);
 
   const loadBookmarks = async () => {
     try {

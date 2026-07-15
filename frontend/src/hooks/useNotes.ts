@@ -5,7 +5,7 @@ import { BookmarksService } from '../../bindings/changeme';
 export function useNotes(translation: string) {
   const [notes, setNotes] = useState<Note[]>([]);
 
-  useEffect(() => { loadNotes(); }, []);
+  useEffect(() => { loadNotes(); }, [translation]);
 
   const loadNotes = async () => {
     try {

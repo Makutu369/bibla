@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, ArrowLeftRight, X, Bookmark, BookmarkCheck, Copy, Check, Columns2, BookOpen, StickyNote } from 'lucide-react';
-import { Verse, Highlight, TranslationInfo, Bookmark as BookmarkType, Note } from '../types/bible';
+import { ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, ArrowLeftRight, X, Bookmark, BookmarkCheck, Copy, Check, Columns2, BookOpen, StickyNote, ListPlus, Plus } from 'lucide-react';
+import { Verse, Highlight, TranslationInfo, Bookmark as BookmarkType, Note, VerseList } from '../types/bible';
 import { parseVerseWords, cleanVerseText, getBookTestament } from '../utils/text';
 import { BibleService } from '../../bindings/changeme';
 import { ComparePanel } from './ComparePanel';
@@ -37,6 +37,9 @@ interface ReaderProps {
   scrollToVerse: { bn: number; ch: number; v: number } | null;
   onClearScrollToVerse: () => void;
   readerWidth: number;
+  verseLists: VerseList[];
+  onAddToVerseList: (listId: number, bn: number, ch: number, v: number) => Promise<boolean>;
+  onCreateVerseList: (name: string) => Promise<VerseList | null>;
 }
 
 const HL_COLORS = [
@@ -73,13 +76,17 @@ function VerseContent({ verse, currentBook, getHighlightFn }: {
   );
 }
 
-export function Reader({ verses, currentBook, currentChapter, loading, highlights, translations, currentTranslation, onSelectTranslation, onToggleHighlight, getHighlight, onPrevChapter, onNextChapter, canGoPrev, canGoNext, isBookmarked, onToggleBookmark, parallelMode, onToggleParallel, parallelTranslation, onSetParallelTranslation, onWordLookup, fontSize, readerWidth, noteForVerse, onToggleNote, focusMode, onExitFocus, onNavigateToVerse, scrollToVerse, onClearScrollToVerse }: ReaderProps) {
+export function Reader({ verses, currentBook, currentChapter, loading, highlights, translations, currentTranslation, onSelectTranslation, onToggleHighlight, getHighlight, onPrevChapter, onNextChapter, canGoPrev, canGoNext, isBookmarked, onToggleBookmark, parallelMode, onToggleParallel, parallelTranslation, onSetParallelTranslation, onWordLookup, fontSize, readerWidth, noteForVerse, onToggleNote, focusMode, onExitFocus, onNavigateToVerse, scrollToVerse, onClearScrollToVerse, verseLists, onAddToVerseList, onCreateVerseList }: ReaderProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [activeVerse, setActiveVerse] = useState<string | null>(null);
   const [compareVerse, setCompareVerse] = useState<{ bn: number; ch: number; v: number } | null>(null);
   const [copiedVerse, setCopiedVerse] = useState<string | null>(null);
   const [parallelVerses, setParallelVerses] = useState<Verse[]>([]);
   const [flashVerse, setFlashVerse] = useState<string | null>(null);
+  const [toolbarAbove, setToolbarAbove] = useState(true);
+  const [listPickerVerse, setListPickerVerse] = useState<string | null>(null);
+  const [newListName, setNewListName] = useState('');
+  const [showNewListInput, setShowNewListInput] = useState(false);
 
   useEffect(() => {
     ref.current?.scrollTo({ top: 0, behavior: 'instant' });
@@ -263,15 +270,27 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                       <span key={key}
                         id={`verse-${key}`}
                         className={`verse-span relative inline cursor-pointer rounded-sm transition-colors duration-150 ${hl ? `hl-${hl.color}` : ''} ${isActive ? 'bg-accent-dim' : isFlashing ? 'bg-fg/10' : 'hover:bg-surface-hover/50'}`}
-                        onClick={(e) => { e.stopPropagation(); setActiveVerse(isActive ? null : key); }}>
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isActive) {
+                            setActiveVerse(null);
+                          } else {
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            const containerRect = ref.current?.getBoundingClientRect();
+                            if (containerRect) {
+                              setToolbarAbove(rect.top - containerRect.top > 60);
+                            }
+                            setActiveVerse(key);
+                          }
+                        }}>
 
                         <AnimatePresence>
                           {isActive && (
                             <motion.span
-                              className="verse-toolbar"
-                              initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                              className={toolbarAbove ? 'verse-toolbar' : 'verse-toolbar-below'}
+                              initial={{ opacity: 0, scale: 0.92, y: toolbarAbove ? 6 : -6 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.92, y: 6 }}
+                              exit={{ opacity: 0, scale: 0.92, y: toolbarAbove ? 6 : -6 }}
                               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                               onClick={e => e.stopPropagation()}>
                               <span className="inline-flex items-center gap-0.5 bg-bg border border-border rounded-2xl p-1.5 shadow-panel">
@@ -280,7 +299,7 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                                   <motion.button key={c.name}
                                     onClick={() => { onToggleHighlight(verse.bookNumber, verse.chapter, verse.verse, c.name); setActiveVerse(null); }}
                                     whileTap={{ scale: 0.8 }}
-                                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110 ${hl?.color === c.name ? 'ring-2 ring-offset-1 ring-offset-bg' : ''}`}
                                     title={c.name}>
                                     <span className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c.dot }} />
                                   </motion.button>
@@ -320,20 +339,110 @@ export function Reader({ verses, currentBook, currentChapter, loading, highlight
                                 </motion.button>
 
                                 {/* Note */}
-                                {(() => {
-                                  const note = noteForVerse(verse.bookNumber, verse.chapter, verse.verse);
-                                  return (
-                                    <motion.button
-                                      onClick={() => { onToggleNote(verse.bookNumber, verse.chapter, verse.verse); setActiveVerse(null); }}
-                                      whileTap={{ scale: 0.85 }}
-                                      className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
-                                        note ? 'text-amber-400 bg-amber-400/10' : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
-                                      }`}
-                                      title={note ? 'Remove note' : 'Add note'}>
-                                      <StickyNote className="w-4 h-4" />
-                                    </motion.button>
-                                             );
-                                })()}
+                                <motion.button
+                                  onClick={() => { onToggleNote(verse.bookNumber, verse.chapter, verse.verse); setActiveVerse(null); }}
+                                  whileTap={{ scale: 0.85 }}
+                                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                                    note ? 'text-amber-400 bg-amber-400/10' : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                                  }`}
+                                  title={note ? 'Remove note' : 'Add note'}>
+                                  <StickyNote className="w-4 h-4" />
+                                </motion.button>
+
+                                {/* Add to list */}
+                                <div className="relative">
+                                  <motion.button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const vk = `${verse.bookNumber}-${verse.chapter}-${verse.verse}`;
+                                      setListPickerVerse(listPickerVerse === vk ? null : vk);
+                                      setShowNewListInput(false);
+                                      setNewListName('');
+                                    }}
+                                    whileTap={{ scale: 0.85 }}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full text-fg-muted hover:text-fg hover:bg-surface-hover transition-all"
+                                    title="Add to verse list">
+                                    <ListPlus className="w-4 h-4" />
+                                  </motion.button>
+                                  {listPickerVerse === `${verse.bookNumber}-${verse.chapter}-${verse.verse}` && (
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                                      className="absolute top-full mt-1 left-1/2 -translate-x-1/2 w-52 bg-bg border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+                                      onClick={e => e.stopPropagation()}>
+                                      <div className="p-1.5 max-h-48 overflow-y-auto">
+                                        {verseLists.length === 0 && !showNewListInput ? (
+                                          <div className="text-[11px] text-fg-muted text-center py-2">No lists yet</div>
+                                        ) : (
+                                          verseLists.map(list => (
+                                            <button
+                                              key={list.id}
+                                              onClick={async () => {
+                                                await onAddToVerseList(list.id, verse.bookNumber, verse.chapter, verse.verse);
+                                                setListPickerVerse(null);
+                                                setActiveVerse(null);
+                                              }}
+                                              className="w-full text-left px-2.5 py-1.5 text-xs text-fg hover:bg-surface-hover rounded-lg transition-colors truncate">
+                                              {list.name}
+                                            </button>
+                                          ))
+                                        )}
+                                      </div>
+                                      <div className="border-t border-border p-1.5">
+                                        {showNewListInput ? (
+                                          <div className="flex gap-1">
+                                            <input
+                                              autoFocus
+                                              value={newListName}
+                                              onChange={e => setNewListName(e.target.value)}
+                                              onKeyDown={async (e) => {
+                                                if (e.key === 'Enter' && newListName.trim()) {
+                                                  const list = await onCreateVerseList(newListName.trim());
+                                                  if (list) {
+                                                    await onAddToVerseList(list.id, verse.bookNumber, verse.chapter, verse.verse);
+                                                    setListPickerVerse(null);
+                                                    setActiveVerse(null);
+                                                  }
+                                                  setShowNewListInput(false);
+                                                  setNewListName('');
+                                                }
+                                                if (e.key === 'Escape') {
+                                                  setShowNewListInput(false);
+                                                  setNewListName('');
+                                                }
+                                              }}
+                                              placeholder="List name…"
+                                              className="flex-1 px-2 py-1 text-xs bg-surface border border-border rounded-md text-fg placeholder-fg-muted outline-none focus:border-accent"
+                                            />
+                                            <button
+                                              onClick={async () => {
+                                                if (newListName.trim()) {
+                                                  const list = await onCreateVerseList(newListName.trim());
+                                                  if (list) {
+                                                    await onAddToVerseList(list.id, verse.bookNumber, verse.chapter, verse.verse);
+                                                    setListPickerVerse(null);
+                                                    setActiveVerse(null);
+                                                  }
+                                                  setShowNewListInput(false);
+                                                  setNewListName('');
+                                                }
+                                              }}
+                                              className="px-2 py-1 text-xs text-accent hover:bg-surface-hover rounded-md transition-colors">
+                                              Add
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            onClick={() => setShowNewListInput(true)}
+                                            className="w-full text-left px-2.5 py-1.5 text-xs text-accent hover:bg-surface-hover rounded-lg transition-colors flex items-center gap-1.5">
+                                            <Plus className="w-3 h-3" />
+                                            New list
+                                          </button>
+                                        )}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </div>
 
                                 <span className="w-px h-5 bg-border mx-1" />
 

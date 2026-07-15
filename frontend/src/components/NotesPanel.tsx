@@ -54,8 +54,8 @@ export function NotesPanel({ translation, onNavigate, onClose }: NotesPanelProps
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {notes.length === 0 ? (
-          <div className="text-center py-12 text-sm text-fg-muted">
-            <StickyNote className="w-8 h-8 mx-auto mb-3 opacity-30" />
+          <div className="text-center py-16 text-sm text-fg-muted">
+            <StickyNote className="w-7 h-7 mx-auto mb-3 opacity-20" />
             <p>No notes yet</p>
             <p className="text-xs mt-1">Tap a verse and use the note icon</p>
           </div>
@@ -83,7 +83,7 @@ export function NotesPanel({ translation, onNavigate, onClose }: NotesPanelProps
                     onChange={e => setContentText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Escape') setEditingId(null); }}
                     rows={3}
-                    className="w-full px-3 py-2.5 text-sm bg-transparent border border-border rounded-full text-fg placeholder:text-fg-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none transition-all duration-200"
+                    className="w-full px-3 py-2.5 text-sm bg-transparent border border-border rounded-lg text-fg placeholder:text-fg-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none transition-all duration-200"
                     placeholder="Write your note…" />
                   <div className="flex gap-1">
                     <button onClick={() => saveContent(n.id)}
