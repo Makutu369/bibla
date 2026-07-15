@@ -49,15 +49,15 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Build frontend
-        run: pnpm build
-        working-directory: frontend
-
       - name: Install wails3
         run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
       - name: Generate bindings
         run: wails3 generate bindings -ts
+
+      - name: Build frontend
+        run: pnpm build
+        working-directory: frontend
 
       - name: Extract version from tag
         id: version
