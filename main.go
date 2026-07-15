@@ -181,6 +181,9 @@ func main() {
 		Providers:      []updater.Provider{gh},
 		CheckInterval:  24 * time.Hour,
 		Window: &updater.BuiltinWindow{
+			Options: updater.WindowOptions{
+				Frameless: true,
+			},
 			HTML: `<!doctype html>
 <html lang="en">
 <head>
