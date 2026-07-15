@@ -12,7 +12,6 @@ import { MapsPanel } from './MapsPanel';
 import { HighlightsPanel } from './HighlightsPanel';
 import { VerseListsPanel } from './VerseListsPanel';
 import { CommentaryPanel } from './CommentaryPanel';
-import { Theme } from '../hooks/useTheme';
 import { Input } from './ui/Input';
 
 export type SidebarTab = 'books' | 'bookmarks' | 'dictionary' | 'plan' | 'notes' | 'topical' | 'settings' | 'maps' | 'highlights' | 'verselists' | 'commentary';
@@ -36,8 +35,6 @@ interface SidebarProps {
   onWordLookup?: (topic: string) => void;
   fontSize: number;
   onSetFontSize: (size: number) => void;
-  theme: Theme;
-  onSetTheme: (theme: Theme) => void;
   readerWidth: number;
   onSetReaderWidth: (width: number) => void;
   currentBookNumber: number;
@@ -161,7 +158,7 @@ const NAV_ITEMS: { id: SidebarTab; icon: typeof Bookmark; label: string }[] = [
   { id: 'plan', icon: Calendar, label: 'Plan' },
 ];
 
-export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch, noteCount, onNavigateToVerse, onWordLookup, fontSize, onSetFontSize, theme, onSetTheme, readerWidth, onSetReaderWidth, currentBookNumber, currentChapterNum }: SidebarProps) {
+export function Sidebar({ books, currentBook, currentChapter, chapters, onSelectBook, onSelectChapter, onNavigate, translation, onClosePanel, activePanel, setActivePanel, dictSearch, onClearDictSearch, noteCount, onNavigateToVerse, onWordLookup, fontSize, onSetFontSize, readerWidth, onSetReaderWidth, currentBookNumber, currentChapterNum }: SidebarProps) {
   const panel = activePanel;
 
   const handlePanelSelect = (p: SidebarTab) => {
@@ -201,7 +198,7 @@ export function Sidebar({ books, currentBook, currentChapter, chapters, onSelect
       return <CommentaryPanel translation={translation} bookNumber={currentBookNumber} chapter={currentChapterNum} onNavigateToVerse={(bn, ch, v) => { onNavigate(bn, ch, v); setActivePanel(null); }} onClose={() => setActivePanel(null)} />;
     }
     if (panel === 'settings') {
-      return <SettingsPanel onClose={() => setActivePanel(null)} fontSize={fontSize} onSetFontSize={onSetFontSize} theme={theme} onSetTheme={onSetTheme} readerWidth={readerWidth} onSetReaderWidth={onSetReaderWidth} />;
+      return <SettingsPanel onClose={() => setActivePanel(null)} fontSize={fontSize} onSetFontSize={onSetFontSize} readerWidth={readerWidth} onSetReaderWidth={onSetReaderWidth} />;
     }
     return null;
   };

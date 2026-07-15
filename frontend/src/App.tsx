@@ -6,7 +6,6 @@ import { SearchBar } from './components/SearchBar';
 import { TranslationPicker } from './components/TranslationPicker';
 import { VerseOfDay } from './components/VerseOfDay';
 import { useBible } from './hooks/useBible';
-import { useTheme } from './hooks/useTheme';
 import { useHighlights } from './hooks/useHighlights';
 import { useBookmarks } from './hooks/useBookmarks';
 import { useNotes } from './hooks/useNotes';
@@ -38,7 +37,6 @@ function App() {
   const bible = useBible();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activePanel, setActivePanel] = useState<SidebarTab | null>(null);
-  const theme = useTheme();
   const hl = useHighlights(bible.currentTranslation);
   const bm = useBookmarks(bible.currentTranslation);
   const nt = useNotes(bible.currentTranslation);
@@ -280,8 +278,6 @@ function App() {
             onWordLookup={handleWordLookup}
             fontSize={fontSize}
             onSetFontSize={setFontSize}
-            theme={theme.theme}
-            onSetTheme={theme.setTheme}
             readerWidth={readerWidth}
             onSetReaderWidth={setReaderWidth}
             currentBookNumber={bible.currentBook?.bookNumber || 10}
@@ -302,11 +298,6 @@ function App() {
               <SearchBar translation={bible.currentTranslation} onNavigate={nav} />
             </div>
             <TranslationPicker translations={bible.translations} currentTranslation={bible.currentTranslation} onSelect={bible.setCurrentTranslation} />
-            <button onClick={theme.cycle}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-border text-fg-muted hover:text-fg hover:bg-surface-hover transition-colors"
-              title={`Theme: ${theme.label}`}>
-              <theme.Icon className="w-4 h-4" />
-            </button>
           </header>
         )}
 
