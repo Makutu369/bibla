@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Settings, Sun, Moon, Circle, Minus, Plus, RotateCcw, Palette, X, Download } from 'lucide-react';
+import { Settings, Sun, Moon, Circle, Minus, Plus, RotateCcw, Palette, X, Download, BookOpen } from 'lucide-react';
 import { Theme } from '../hooks/useTheme';
 import { AppService } from '../../bindings/changeme';
 
@@ -339,19 +339,26 @@ export function SettingsPanel({ onClose, fontSize, onSetFontSize, theme, onSetTh
         {/* About */}
         <div>
           <h3 className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-3">About</h3>
-          <div className="p-3 rounded-xl bg-surface border border-border space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-fg">Bibla</span>
-              <span className="text-xs text-fg-muted font-mono">v{version}</span>
+          <div className="rounded-2xl border border-border overflow-hidden">
+            <div className="px-4 pt-5 pb-4 text-center bg-gradient-to-b from-accent/5 to-transparent">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-accent/10 flex items-center justify-center">
+                <BookOpen className="w-7 h-7 text-accent" />
+              </div>
+              <h4 className="text-base font-bold text-fg">Bibla</h4>
+              <p className="text-[11px] text-fg-muted mt-0.5">A beautiful Bible reader</p>
+              <span className="inline-block mt-2 px-2.5 py-0.5 text-[10px] font-mono font-medium text-fg-muted bg-surface rounded-full border border-border">
+                v{version}
+              </span>
             </div>
-            <p className="text-xs text-fg-muted">A beautiful Bible reader</p>
-            <button
-              onClick={handleCheckUpdates}
-              disabled={checkingUpdate}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors">
-              <Download className="w-3.5 h-3.5" />
-              {checkingUpdate ? 'Checking...' : 'Check for Updates'}
-            </button>
+            <div className="px-4 pb-4">
+              <button
+                onClick={handleCheckUpdates}
+                disabled={checkingUpdate}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl border border-border bg-surface hover:bg-surface-hover hover:border-border-focus disabled:opacity-50 transition-all">
+                <Download className="w-3.5 h-3.5" />
+                {checkingUpdate ? 'Checking for updates...' : 'Check for Updates'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
