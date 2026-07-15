@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: [master]
     tags:
       - 'v*'
 
@@ -200,6 +201,7 @@ jobs:
           path: bin/bibla-windows-amd64.exe
 
   release:
+    if: startsWith(github.ref, 'refs/tags/')
     needs:
       - build-linux-amd64
       - build-darwin-arm64
