@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -138,6 +139,9 @@ func main() {
 	gh, err := github.New(github.Config{
 		Repository:    "Makutu369/bibla",
 		ChecksumAsset: "SHA256SUMS",
+		HTTPClient: &http.Client{
+			Timeout: 10 * time.Minute,
+		},
 	})
 	if err != nil {
 		log.Fatalf("github.New: %v", err)
