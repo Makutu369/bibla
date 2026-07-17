@@ -274,7 +274,7 @@ jobs:
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS"
           $env:PATH = "$nsisPath;$env:PATH"
-          makensis -DWAILS_AMD64_BINARY="bin\bibla-windows-amd64.exe" build/windows/nsis/project.nsi
+          makensis -DARG_WAILS_AMD64_BINARY="bin\bibla-windows-amd64.exe" build/windows/nsis/project.nsi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
