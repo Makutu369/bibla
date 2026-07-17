@@ -262,6 +262,13 @@ jobs:
         shell: bash
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate Windows icon and syso
+        shell: pwsh
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          wails3 generate icons -input build/appicon.png -windowsfilename build/windows/icon.ico
+          wails3 generate syso -arch amd64 -icon build/windows/icon.ico -manifest build/windows/wails.exe.manifest -info build/windows/info.json -out wails_windows_amd64.syso
+
       - name: Build binary
         env:
           GOOS: windows
@@ -272,15 +279,7 @@ jobs:
           go build -tags production -trimpath `
             -ldflags="-w -s -H windowsgui -X main.currentVersion=${{ steps.version.outputs.VERSION }}" `
             -o "bin/bibla-windows-amd64.exe" .
-
-      - name: Install NSIS
-        run: choco install nsis -y
-
-      - name: Generate Windows icon from bible-logo
-        shell: pwsh
-        run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-          wails3 generate icons -input build/appicon.png -windowsfilename build/windows/icon.ico
+          Remove-Item *.syso
 
       - name: Build WebView2 bootstrapper
         run: |
