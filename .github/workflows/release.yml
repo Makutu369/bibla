@@ -69,9 +69,23 @@ jobs:
           mkdir -p "${PKG_DIR}/usr/bin"
           mkdir -p "${PKG_DIR}/usr/share/applications"
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps"
+          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/128x128/apps"
+          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/64x64/apps"
+          mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/48x48/apps"
 
           cp bin/bibla-linux-amd64 "${PKG_DIR}/usr/bin/bibla"
           cp frontend/public/bible-logo.png "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps/bibla.png"
+          cp frontend/public/bible-logo.png "${PKG_DIR}/usr/share/icons/hicolor/128x128/apps/bibla.png"
+          cp frontend/public/bible-logo.png "${PKG_DIR}/usr/share/icons/hicolor/64x64/apps/bibla.png"
+          cp frontend/public/bible-logo.png "${PKG_DIR}/usr/share/icons/hicolor/48x48/apps/bibla.png"
+
+          cat > "${PKG_DIR}/DEBIAN/postinst" << 'POSTINST'
+          #!/bin/sh
+          set -e
+          gtk-update-icon-cache -f /usr/share/icons/hicolor || true
+          update-desktop-database /usr/share/applications || true
+          POSTINST
+          chmod 755 "${PKG_DIR}/DEBIAN/postinst"
 
           cat > "${PKG_DIR}/DEBIAN/control" << EOF
           Package: bibla
@@ -90,9 +104,11 @@ jobs:
           [Desktop Entry]
           Type=Application
           Name=Bibla
+          GenericName=Bible Reader
           Comment=A beautiful Bible reader
           Exec=/usr/bin/bibla
           Icon=bibla
+          StartupWMClass=org.wails.Bibla
           Categories=Education;Religion;
           Terminal=false
           EOF
