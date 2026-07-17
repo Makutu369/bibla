@@ -291,7 +291,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bibla-windows-amd64-installer
-          path: bin/bibla-*-amd64-installer.exe
+          path: bin/bibla-amd64-installer.exe
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -324,5 +324,5 @@ jobs:
             bin/bibla-darwin-arm64
             bin/bibla-darwin-amd64
             bin/bibla-windows-amd64.exe
-            bin/*-amd64-installer.exe
+            bin/bibla-amd64-installer.exe
             bin/SHA256SUMS
