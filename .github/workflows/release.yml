@@ -274,7 +274,11 @@ jobs:
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS"
           $env:PATH = "$nsisPath;$env:PATH"
-          makensis -DARG_WAILS_AMD64_BINARY="bin\bibla-windows-amd64.exe" build/windows/nsis/project.nsi
+          $binaryPath = Join-Path $env:GITHUB_WORKSPACE "bin/bibla-windows-amd64.exe"
+          Write-Host "Binary path: $binaryPath"
+          Write-Host "Binary exists: $(Test-Path $binaryPath)"
+          Write-Host "Working directory: $(Get-Location)"
+          makensis "-DARG_WAILS_AMD64_BINARY=$binaryPath" build/windows/nsis/project.nsi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
