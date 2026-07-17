@@ -21,6 +21,9 @@ var assets embed.FS
 //go:embed bibles
 var embeddedBibles embed.FS
 
+//go:embed frontend/public/bible-logo.png
+var windowIcon []byte
+
 var currentVersion = "dev"
 
 var appInst *application.App
@@ -122,6 +125,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "Bibla",
 		Description: "A beautiful Bible reader",
+		Icon:        windowIcon,
 		Services: []application.Service{
 			application.NewService(bibleService),
 			application.NewService(dictionaryService),
@@ -220,6 +224,7 @@ body {
   overflow: hidden;
 }
 .layout {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -231,6 +236,25 @@ body {
   align-items: flex-start;
   gap: 12px;
 }
+.close-x {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+.close-x:hover { background: var(--surface-hover); color: var(--fg); }
 .icon {
   flex: 0 0 auto;
   width: 40px;
@@ -368,6 +392,7 @@ body {
 </head>
 <body>
 <main class="layout wails-updater" id="root" state="checking" data-wails-updater-window="1">
+  <button class="close-x" id="btn-close-x" type="button" title="Close">&times;</button>
   <header class="hero">
     <div class="icon" id="state-icon">↓</div>
     <div class="head">
@@ -388,7 +413,7 @@ body {
 
   <footer class="footer">
     <button class="btn btn-ghost" data-show="available" id="btn-skip" type="button">Skip</button>
-    <button class="btn" data-show="available up-to-date error" id="btn-cancel" type="button">Close</button>
+    <button class="btn" data-show="available up-to-date error checking downloading verifying installing" id="btn-cancel" type="button">Close</button>
     <button class="btn btn-primary" data-show="available" id="btn-install" type="button">Install</button>
     <button class="btn btn-primary" data-show="ready" id="btn-restart" type="button">Restart</button>
     <button class="btn btn-primary" data-show="error" id="btn-retry" type="button">Retry</button>
@@ -477,6 +502,8 @@ body {
   if (els.btnCancel)  els.btnCancel.addEventListener("click", function(){ Events.Emit("wails:updater:user:cancel"); });
   if (els.btnRestart) els.btnRestart.addEventListener("click", function(){ Events.Emit("wails:updater:user:restart"); });
   if (els.btnRetry)   els.btnRetry.addEventListener("click", function(){ Events.Emit("wails:updater:user:install"); });
+  var btnCloseX = document.getElementById("btn-close-x");
+  if (btnCloseX) btnCloseX.addEventListener("click", function(){ Events.Emit("wails:updater:user:cancel"); });
 
   (function announce() {
     if (window._wails && typeof window._wails.invoke === "function") {

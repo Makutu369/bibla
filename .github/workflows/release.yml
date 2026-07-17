@@ -71,6 +71,7 @@ jobs:
           mkdir -p "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps"
 
           cp bin/bibla-linux-amd64 "${PKG_DIR}/usr/bin/bibla"
+          cp frontend/public/bible-logo.png "${PKG_DIR}/usr/share/icons/hicolor/256x256/apps/bibla.png"
 
           cat > "${PKG_DIR}/DEBIAN/control" << EOF
           Package: bibla
