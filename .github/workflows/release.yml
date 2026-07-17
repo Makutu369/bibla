@@ -253,14 +253,40 @@ jobs:
           CC: x86_64-w64-mingw32-gcc
         run: |
           go build -tags production -trimpath `
-            -ldflags="-w -s -X main.currentVersion=${{ steps.version.outputs.VERSION }}" `
+            -ldflags="-w -s -H windowsgui -X main.currentVersion=${{ steps.version.outputs.VERSION }}" `
             -o "bin/bibla-windows-amd64.exe" .
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Generate Windows icon from bible-logo
+        shell: pwsh
+        run: |
+          # Install wails3 for icon generation
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          # Generate .ico from appicon.png
+          wails3 generate icons -input build/appicon.png -windowsfilename build/windows/icon.ico
+
+      - name: Build WebView2 bootstrapper
+        run: |
+          curl -L -o build/windows/nsis/MicrosoftEdgeWebview2Setup.exe https://go.microsoft.com/fwlink/p/?LinkId=2124703
+
+      - name: Build NSIS installer
+        run: |
+          makensis -DWAILS_AMD64_BINARY="bin\bibla-windows-amd64.exe" build/windows/nsis/project.nsi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bibla-windows-amd64
           path: bin/bibla-windows-amd64.exe
+
+      - name: Upload NSIS installer artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: bibla-windows-amd64-installer
+          path: bin/bibla-*-amd64-installer.exe
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -293,4 +319,5 @@ jobs:
             bin/bibla-darwin-arm64
             bin/bibla-darwin-amd64
             bin/bibla-windows-amd64.exe
+            bin/*-amd64-installer.exe
             bin/SHA256SUMS

@@ -93,6 +93,10 @@ Section
     
     !insertmacro wails.files
 
+    ; Install bibles directory
+    SetOutPath "$INSTDIR\bibles"
+    File /r "..\..\..\bibles\*.*"
+
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 
