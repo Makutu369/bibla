@@ -65,6 +65,9 @@ jobs:
             -o "bin/bibla-windows-amd64.exe" .
           Remove-Item *.syso
 
+      - name: Install NSIS
+        run: choco install nsis -y
+
       - name: Download WebView2 bootstrapper
         run: |
           curl -L -o build/windows/nsis/MicrosoftEdgeWebview2Setup.exe https://go.microsoft.com/fwlink/p/?LinkId=2124703
