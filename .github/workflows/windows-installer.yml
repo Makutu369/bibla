@@ -1,0 +1,104 @@
+name: Windows NSIS Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g. 1.2.3). Leave empty to use "dev".'
+        required: false
+        type: string
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build frontend
+        run: pnpm build
+        working-directory: frontend
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            echo "VERSION=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERSION=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate Windows icon and syso
+        shell: pwsh
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+          wails3 generate icons -input build/appicon.png -windowsfilename build/windows/icon.ico
+          wails3 generate syso -arch amd64 -icon build/windows/icon.ico -manifest build/windows/wails.exe.manifest -info build/windows/info.json -out wails_windows_amd64.syso
+
+      - name: Build binary
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '1'
+          CC: x86_64-w64-mingw32-gcc
+        run: |
+          go build -tags production -trimpath `
+            -ldflags="-w -s -H windowsgui -X main.currentVersion=${{ steps.version.outputs.VERSION }}" `
+            -o "bin/bibla-windows-amd64.exe" .
+          Remove-Item *.syso
+
+      - name: Download WebView2 bootstrapper
+        run: |
+          curl -L -o build/windows/nsis/MicrosoftEdgeWebview2Setup.exe https://go.microsoft.com/fwlink/p/?LinkId=2124703
+
+      - name: Build NSIS installer
+        shell: pwsh
+        run: |
+          $nsisPath = "${env:ProgramFiles(x86)}\NSIS"
+          $env:PATH = "$nsisPath;$env:PATH"
+          $binaryPath = Join-Path $env:GITHUB_WORKSPACE "bin/bibla-windows-amd64.exe"
+          Write-Host "Binary path: $binaryPath"
+          Write-Host "Binary exists: $(Test-Path $binaryPath)"
+          makensis "-DARG_WAILS_AMD64_BINARY=$binaryPath" build/windows/nsis/project.nsi
+
+      - name: Verify installer exists
+        shell: pwsh
+        run: |
+          $installer = "bin/bibla-amd64-installer.exe"
+          if (Test-Path $installer) {
+            $size = (Get-Item $installer).Length
+            Write-Host "Installer created: $installer ($([math]::Round($size / 1MB, 2)) MB)"
+          } else {
+            Write-Error "Installer not found at $installer"
+            exit 1
+          }
+
+      - name: Upload portable exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: bibla-windows-amd64
+          path: bin/bibla-windows-amd64.exe
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: bibla-windows-amd64-installer
+          path: bin/bibla-amd64-installer.exe
